@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Manager — PandaAgent</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:       #0f0f0f;
+  --surface:  #161616;
+  --surface2: #1f1f1f;
+  --border:   #2a2a2a;
+  --border2:  #333;
+  --text:     #e4e4e4;
+  --muted:    #666;
+  --green:    #42d392;
+  --red:      #ff5f57;
+  --yellow:   #ffbd2e;
+  --blue:     #4da6ff;
+  --orange:   #ff9f43;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 48px 1fr;
+  overflow: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+}
+
+.logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+
+.logo span { color: var(--muted); font-weight: 300; }
+
+.header-sep { flex: 1; }
+
+.server-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.project-list::-webkit-scrollbar { width: 3px; }
+.project-list::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.project-group-label {
+  padding: 10px 16px 4px;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.project-item {
+  padding: 7px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+  font-size: 13px;
+}
+
+.project-item:hover { background: var(--surface2); }
+
+.project-item.active {
+  background: rgba(66,211,146,0.07);
+  border-left-color: var(--green);
+  color: var(--green);
+}
+
+.project-icon { font-size: 12px; opacity: 0.7; }
+
+.project-name { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+.project-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.project-dot.ok     { background: var(--green); }
+.project-dot.dirty  { background: var(--yellow); }
+.project-dot.nopath { background: var(--muted); }
+
+/* ── MAIN ── */
+.main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* ── PROJECT HEADER ── */
+.project-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.project-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 4px;
+}
+
+.project-meta {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.project-path {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--blue);
+  opacity: 0.7;
+}
+
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover { border-color: var(--green); color: var(--green); background: rgba(66,211,146,0.05); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn.danger:hover  { border-color: var(--red); color: var(--red); background: rgba(255,95,87,0.05); }
+.btn.warning:hover { border-color: var(--yellow); color: var(--yellow); background: rgba(255,189,46,0.05); }
+.btn.primary { border-color: var(--green); color: var(--green); }
+
+/* ── CONTENT AREA ── */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 1px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.panel {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-header .badge {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: var(--text);
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.panel-body::-webkit-scrollbar { width: 3px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* diff colors */
+.diff-add  { color: var(--green); }
+.diff-del  { color: var(--red); }
+.diff-hdr  { color: var(--blue); opacity: 0.8; }
+.diff-meta { color: var(--muted); }
+
+/* log colors */
+.log-hash   { color: var(--yellow); }
+.log-msg    { color: var(--text); }
+
+/* status */
+.status-M { color: var(--yellow); }
+.status-A { color: var(--green); }
+.status-D { color: var(--red); }
+.status-? { color: var(--muted); }
+.status-branch { color: var(--blue); font-weight: 600; }
+
+/* ── COMMIT AREA ── */
+.commit-area {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.commit-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  padding: 8px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.commit-input:focus { border-color: var(--green); }
+.commit-input::placeholder { color: var(--muted); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 24px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal h3 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--yellow);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.modal-cmd {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── OUTPUT TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  max-width: 400px;
+  z-index: 200;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s;
+  border-left: 3px solid var(--green);
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-left-color: var(--red); }
+
+/* ── EMPTY STATE ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  gap: 8px;
+}
+
+.empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.4; }
+
+.model-selector {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+}
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 16px;
+.loading {
+  color: var(--muted);
+  content: '';
+  animation: dots 1.2s infinite;
+}
+
+@keyframes dots {
+  0%   { content: '.'; }
+  33%  { content: '..'; }
+  66%  { content: '...'; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🐼 git<span>/</span>manager</div>
+  <div class="header-sep"></div>
+  <div class="server-status">
+    <div class="dot"></div>
+    localhost:8765
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+    Projetos
+    <button class="btn" onclick="openNewProjectModal()" style="padding:2px 8px;font-size:10px;margin-left:auto">＋</button>
+  </div>
+    <div class="project-list" id="projectList">
+      <div class="loading">carregando</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainArea">
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">
+      <span style="font-size:40px;opacity:0.3">🐼</span>
+      <span style="font-size:12px">Selecione um projeto</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL PUSH -->
+<div class="modal-overlay" id="pushModal">
+  <div class="modal">
+    <h3>⚠️ Confirmar Push</h3>
+    <p>Você está prestes a enviar commits para o repositório remoto.</p>
+    <div class="modal-cmd" id="pushCmd">git push origin main</div>
+    <p style="color:var(--red);font-size:12px">Esta ação não pode ser desfeita facilmente.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closePushModal()">Cancelar</button>
+      <button class="btn danger" onclick="confirmPush()">Confirmar Push</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO PROJETO -->
+<div class="modal-overlay" id="newProjectModal">
+  <div class="modal" style="width:500px">
+    <h3>＋ Novo Projeto</h3>
+
+    <div style="display:grid;gap:10px;margin-bottom:20px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Nome *</div>
+          <input id="np_name" placeholder="meu-projeto" class="commit-input" style="width:100%"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Tipo</div>
+          <select id="np_type" class="model-selector" style="width:100%;padding:8px 10px;font-size:13px">
+            <option value="tool">🔧 Ferramenta</option>
+            <option value="frontend">🌐 Frontend</option>
+            <option value="contract">⛓️ Contrato</option>
+            <option value="automation">🤖 Automação</option>
+            <option value="sandbox">🧪 Sandbox</option>
+            <option value="other">📦 Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Caminho da pasta *</div>
+        <input id="np_path" placeholder="C:/Users/panta/Desktop/meu-projeto" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Descrição</div>
+        <input id="np_desc" placeholder="O que é o projeto?" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Objetivo <span style="color:var(--muted);font-size:9px">(para o LLM no futuro)</span></div>
+        <input id="np_obj" placeholder="Para que serve? Qual problema resolve?" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack <span style="color:var(--muted);font-size:9px">(separado por vírgula)</span></div>
+          <input id="np_stack" placeholder="python, bitcoin" class="commit-input" style="width:100%"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Status</div>
+          <select id="np_status" class="model-selector" style="width:100%;padding:8px 10px;font-size:13px">
+            <option value="em desenvolvimento">Em desenvolvimento</option>
+            <option value="produção">Produção</option>
+            <option value="experimento">Experimento</option>
+            <option value="sandbox">Sandbox</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Git Remote <span style="color:var(--muted);font-size:9px">(opcional)</span></div>
+        <input id="np_remote" placeholder="git@github.com:panta/repo.git" class="commit-input" style="width:100%"/>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--muted)">
+        <input type="checkbox" id="np_init" style="accent-color:var(--green)"/>
+        Inicializar repositório git (<code style="font-size:11px">git init</code>)
+      </label>
+
+    </div>
+
+    <div id="np_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeNewProjectModal()">Cancelar</button>
+      <button class="btn primary" onclick="submitNewProject()">Adicionar Projeto</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let projects = {};
+let currentProject = null;
+const API = 'http://localhost:8765';
+
+const TYPE_ICONS = {
+  contract:   '⛓️',
+  frontend:   '🌐',
+  automation: '🤖',
+  tool:       '🔧',
+  sandbox:    '🧪',
+  other:      '📦',
+};
+
+const TYPE_LABELS = {
+  contract:   'Contratos',
+  frontend:   'Frontend',
+  automation: 'Automação',
+  tool:       'Ferramentas',
+  sandbox:    'Sandbox',
+};
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(`${API}/api/projects`);
+    projects = await r.json();
+    renderSidebar();
+  } catch(e) {
+    document.getElementById('projectList').innerHTML =
+      '<div style="padding:16px;color:var(--red);font-family:monospace;font-size:12px">Servidor offline.<br>Execute: python server.py</div>';
+  }
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────
+function renderSidebar() {
+  const grouped = {};
+  for (const [name, cfg] of Object.entries(projects)) {
+    const t = cfg.type || 'other';
+    if (!grouped[t]) grouped[t] = [];
+    grouped[t].push([name, cfg]);
+  }
+
+  const order = ['contract','frontend','automation','tool','sandbox','other'];
+  let html = '';
+
+  for (const type of order) {
+    if (!grouped[type]) continue;
+    html += `<div class="project-group-label">${TYPE_LABELS[type] || type}</div>`;
+    for (const [name, cfg] of grouped[type]) {
+      const icon = TYPE_ICONS[type] || '📦';
+      html += `
+        <div class="project-item" id="item-${name}" onclick="selectProject('${name}')">
+          <span class="project-icon">${icon}</span>
+          <span class="project-name">${name}</span>
+          <span class="project-dot nopath" id="dot-${name}"></span>
+        </div>`;
+    }
+  }
+
+  document.getElementById('projectList').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// SELECT PROJECT
+// ─────────────────────────────────────────────
+async function selectProject(name) {
+  currentProject = name;
+  const cfg = projects[name];
+
+  // Highlight sidebar
+  document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`item-${name}`)?.classList.add('active');
+
+  // Render main area
+  const stack = (cfg.stack || []).join(', ');
+  const icon  = TYPE_ICONS[cfg.type] || '📦';
+  const confirmList = (cfg.require_confirmation || []).join(', ') || 'git push, git reset';
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="project-header">
+      <div>
+        <div class="project-title">${icon} ${name}</div>
+        <div class="project-meta">${cfg.description || ''}</div>
+        <div class="project-path">${cfg.path}</div>
+        ${stack ? `<div class="project-meta" style="margin-top:4px;color:var(--blue);opacity:0.7">${stack}</div>` : ''}
+      </div>
+      <div class="action-bar">
+        <button class="btn" onclick="loadStatus()">↻ Status</button>
+        <button class="btn" onclick="loadDiff(false)">~ Diff</button>
+        <button class="btn" onclick="loadLog()">📋 Log</button>
+        <button class="btn" onclick="loadBranches()">⎇ Branches</button>
+        <button class="btn" onclick="openInVscode()" title="Abre o projeto no VS Code">⌨ VS Code</button>
+        <button class="btn warning" onclick="doPull()">⬇ Pull</button>
+        <button class="btn danger" onclick="openPushModal()">⬆ Push</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="panel">
+        <div class="panel-header">
+          Status
+          <span class="badge" id="statusBadge">—</span>
+        </div>
+        <div class="panel-body" id="statusPanel"><span style="color:var(--muted)">Clique em ↻ Status</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          Diff / Log / Branches
+          <button class="btn" style="padding:2px 8px;font-size:10px" onclick="loadDiff(true)">diff completo</button>
+        </div>
+        <div class="panel-body" id="diffPanel"><span style="color:var(--muted)">Clique em ~ Diff, 📋 Log ou ⎇ Branches</span></div>
+      </div>
+      <div class="commit-area">
+        <div style="flex:1;display:grid;gap:6px">
+          <input
+            class="commit-input"
+            id="commitMsg"
+            placeholder="Mensagem do commit..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()"
+            style="width:100%"
+          />
+          <input
+            class="commit-input"
+            id="commitContext"
+            placeholder="O que você alterou nesta versão? (opcional — melhora a mensagem gerada pelo LLM no futuro)"
+            style="width:100%;font-size:11px;opacity:0.7"
+          />
+        </div>
+        <button class="btn primary" onclick="doCommit()" style="align-self:flex-start">✓ Commit</button>
+      </div>
+    </div>
+  `;
+
+  loadStatus();
+}
+
+// ─────────────────────────────────────────────
+// GIT ACTIONS
+// ─────────────────────────────────────────────
+async function loadStatus() {
+  setPanel('statusPanel', '<span class="loading">carregando</span>');
+  const data = await api(`/api/status?project=${currentProject}`);
+  const lines = (data.output || '').split('\n');
+
+  let html = '';
+  for (const line of lines) {
+    if (line.startsWith('##')) {
+      html += `<div class="status-branch">${esc(line)}</div>`;
+    } else if (line.startsWith(' M') || line.startsWith('M ')) {
+      html += `<div class="status-M">${esc(line)}</div>`;
+    } else if (line.startsWith('A ') || line.startsWith(' A')) {
+      html += `<div class="status-A">${esc(line)}</div>`;
+    } else if (line.startsWith('D ') || line.startsWith(' D')) {
+      html += `<div class="status-D">${esc(line)}</div>`;
+    } else if (line.startsWith('?')) {
+      html += `<div class="status-?">${esc(line)}</div>`;
+    } else {
+      html += `<div>${esc(line)}</div>`;
+    }
+  }
+
+  setPanel('statusPanel', html || '<span style="color:var(--green)">Nada a commitar</span>');
+
+  // Atualiza dot da sidebar
+  const dot = document.getElementById(`dot-${currentProject}`);
+  if (dot) {
+    const hasChanges = lines.some(l => !l.startsWith('##') && l.trim());
+    dot.className = `project-dot ${hasChanges ? 'dirty' : 'ok'}`;
+  }
+
+  // Badge
+  const changed = lines.filter(l => l.trim() && !l.startsWith('##')).length;
+  const badge = document.getElementById('statusBadge');
+  if (badge) badge.textContent = changed ? `${changed} arquivo(s)` : 'limpo';
+}
+
+async function loadDiff(full) {
+  setPanel('diffPanel', '<span class="loading">carregando</span>');
+  const data = await api(`/api/diff?project=${currentProject}&full=${full?1:0}`);
+  const lines = (data.output || '').split('\n');
+
+  if (!data.output || data.output.trim() === '') {
+    setPanel('diffPanel', '<span style="color:var(--green)">Sem diferenças</span>');
+    return;
+  }
+
+  let html = '';
+  for (const line of lines) {
+    if (line.startsWith('+++) ') || line.startsWith('--- ')) {
+      html += `<div class="diff-hdr">${esc(line)}</div>`;
+    } else if (line.startsWith('+++') || line.startsWith('---')) {
+      html += `<div class="diff-hdr">${esc(line)}</div>`;
+    } else if (line.startsWith('+')) {
+      html += `<div class="diff-add">${esc(line)}</div>`;
+    } else if (line.startsWith('-')) {
+      html += `<div class="diff-del">${esc(line)}</div>`;
+    } else if (line.startsWith('@@')) {
+      html += `<div class="diff-meta">${esc(line)}</div>`;
+    } else {
+      html += `<div>${esc(line)}</div>`;
+    }
+  }
+
+  setPanel('diffPanel', html);
+}
+
+async function loadLog() {
+  setPanel('diffPanel', '<span class="loading">carregando</span>');
+  const data = await api(`/api/log?project=${currentProject}`);
+  const lines = (data.output || '').split('\n');
+
+  let html = '<div style="margin-bottom:8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">Últimos 10 commits</div>';
+  for (const line of lines) {
+    const parts = line.match(/^([a-f0-9]+)\s(.*)$/);
+    if (parts) {
+      html += `<div style="margin-bottom:4px"><span class="log-hash">${parts[1]}</span> <span class="log-msg">${esc(parts[2])}</span></div>`;
+    } else if (line.trim()) {
+      html += `<div>${esc(line)}</div>`;
+    }
+  }
+
+  setPanel('diffPanel', html || '<span style="color:var(--muted)">Sem commits</span>');
+}
+
+async function loadBranches() {
+  setPanel('diffPanel', '<span class="loading">carregando</span>');
+  const data = await api(`/api/branches?project=${currentProject}`);
+  const lines = (data.output || '').split('\n');
+
+  let html = '<div style="margin-bottom:8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">Branches</div>';
+  for (const line of lines) {
+    if (line.startsWith('*')) {
+      html += `<div style="color:var(--green)">${esc(line)}</div>`;
+    } else if (line.trim()) {
+      html += `<div style="color:var(--muted)">${esc(line)}</div>`;
+    }
+  }
+
+  html += `
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <input id="branchInput" placeholder="nova-branch" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;outline:none;width:160px" />
+      <button class="btn" onclick="doNewBranch()" style="font-size:11px;padding:5px 10px">+ Nova branch</button>
+      <button class="btn" onclick="doCheckout()" style="font-size:11px;padding:5px 10px">→ Checkout</button>
+    </div>`;
+
+  setPanel('diffPanel', html);
+}
+
+async function openInVscode() {
+  const data = await apiPost('/api/open_vscode', { project: currentProject });
+  showToast(data.ok ? `⌨ Abrindo ${currentProject} no VS Code...` : `✗ ${data.output}`, !data.ok);
+}
+
+async function doCommit() {
+  const msg = document.getElementById('commitMsg')?.value?.trim();
+  if (!msg) { showToast('Digite uma mensagem de commit', true); return; }
+
+  const data = await apiPost('/api/commit', { project: currentProject, message: msg });
+  showToast(data.ok ? `✓ Commit: "${msg}"` : `✗ ${data.output}`, !data.ok);
+  if (data.ok) {
+    document.getElementById('commitMsg').value = '';
+    loadStatus();
+  }
+}
+
+async function doPull() {
+  showToast('Executando pull...');
+  const data = await apiPost('/api/pull', { project: currentProject });
+  showToast(data.ok ? `✓ Pull concluído` : `✗ ${data.output}`, !data.ok);
+  if (data.ok) loadStatus();
+}
+
+async function doNewBranch() {
+  const branch = document.getElementById('branchInput')?.value?.trim();
+  if (!branch) return;
+  const data = await apiPost('/api/new_branch', { project: currentProject, branch });
+  showToast(data.ok ? `✓ Branch criada: ${branch}` : `✗ ${data.output}`, !data.ok);
+  if (data.ok) loadBranches();
+}
+
+async function doCheckout() {
+  const branch = document.getElementById('branchInput')?.value?.trim();
+  if (!branch) return;
+  const data = await apiPost('/api/checkout', { project: currentProject, branch });
+  showToast(data.ok ? `✓ Checkout: ${branch}` : `✗ ${data.output}`, !data.ok);
+  if (data.ok) loadBranches();
+}
+
+// ─────────────────────────────────────────────
+// NOVO PROJETO MODAL
+// ─────────────────────────────────────────────
+function openNewProjectModal() {
+  ['np_name','np_path','np_desc','np_obj','np_stack','np_remote'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('np_init').checked = false;
+  document.getElementById('np_error').style.display = 'none';
+  document.getElementById('newProjectModal').classList.add('show');
+}
+
+function closeNewProjectModal() {
+  document.getElementById('newProjectModal').classList.remove('show');
+}
+
+async function submitNewProject() {
+  const name = document.getElementById('np_name').value.trim();
+  const path = document.getElementById('np_path').value.trim();
+  const errEl = document.getElementById('np_error');
+
+  if (!name || !path) {
+    errEl.textContent = 'Nome e caminho são obrigatórios.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const body = {
+    name,
+    path,
+    description: document.getElementById('np_desc').value.trim(),
+    objective:   document.getElementById('np_obj').value.trim(),
+    stack:       document.getElementById('np_stack').value.trim(),
+    status:      document.getElementById('np_status').value,
+    type:        document.getElementById('np_type').value,
+    git_remote:  document.getElementById('np_remote').value.trim(),
+    init_git:    document.getElementById('np_init').checked,
+  };
+
+  const data = await apiPost('/api/add_project', body);
+
+  if (!data.ok) {
+    errEl.textContent = data.output;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  closeNewProjectModal();
+  showToast(`✓ Projeto '${name}' adicionado`);
+
+  // Recarrega lista de projetos e atualiza sidebar
+  const r = await fetch(`${API}/api/projects`);
+  projects = await r.json();
+  renderSidebar();
+}
+
+document.getElementById('newProjectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeNewProjectModal();
+});
+
+// ─────────────────────────────────────────────
+// PUSH MODAL
+// ─────────────────────────────────────────────
+function openPushModal() {
+  const remote = projects[currentProject]?.git_remote || 'origin';
+  document.getElementById('pushCmd').textContent = `git push ${remote}`;
+  document.getElementById('pushModal').classList.add('show');
+}
+
+function closePushModal() {
+  document.getElementById('pushModal').classList.remove('show');
+}
+
+async function confirmPush() {
+  closePushModal();
+  showToast('Executando push...');
+  const remote = projects[currentProject]?.git_remote || 'origin';
+  const data = await apiPost('/api/push', { project: currentProject, remote: 'origin' });
+  showToast(data.ok ? `✓ Push concluído` : `✗ ${data.output}`, !data.ok);
+}
+
+// Fecha modal ao clicar fora
+document.getElementById('pushModal').addEventListener('click', function(e) {
+  if (e.target === this) closePushModal();
+});
+
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+async function api(url) {
+  try {
+    const r = await fetch(API + url);
+    return await r.json();
+  } catch(e) {
+    return { ok: false, output: 'Erro de conexão com o servidor' };
+  }
+}
+
+async function apiPost(url, body) {
+  try {
+    const r = await fetch(API + url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return await r.json();
+  } catch(e) {
+    return { ok: false, output: 'Erro de conexão com o servidor' };
+  }
+}
+
+function setPanel(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show${isError ? ' error' : ''}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
