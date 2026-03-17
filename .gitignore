@@ -1,3 +1,6 @@
+# Project registry — contains local paths, keep private
+projects.json
+
 # Python
 __pycache__/
 *.py[cod]

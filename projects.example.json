@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "my-project": {
+      "path": "C:/Users/username/my-project",
+      "description": "Short description of the project",
+      "objective": "What problem it solves (used by LLM for context)",
+      "status": "em desenvolvimento",
+      "stack": ["python", "javascript"],
+      "type": "tool",
+      "git_remote": "",
+      "require_confirmation": ["git push", "git reset", "git rebase"]
+    }
+  },
+  "settings": {
+    "default_confirmation": ["git push", "git reset", "git rebase", "rmdir", "rm -rf"],
+    "workspace": "C:/Users/username/panda_workspace"
+  }
+}
