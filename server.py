@@ -131,6 +131,23 @@ def save_project(name: str, cfg: dict) -> dict:
         return {"ok": False, "output": str(e)}
 
 
+def remove_project(name: str) -> dict:
+    """Remove um projeto do projects.json sem deletar a pasta."""
+    try:
+        if not PROJECTS_FILE.exists():
+            return {"ok": False, "output": "projects.json não encontrado"}
+        with open(PROJECTS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        if name not in data.get("projects", {}):
+            return {"ok": False, "output": f"Projeto '{name}' não encontrado"}
+        del data["projects"][name]
+        with open(PROJECTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return {"ok": True, "output": f"Projeto '{name}' removido com sucesso."}
+    except Exception as e:
+        return {"ok": False, "output": str(e)}
+
+
 # ─────────────────────────────────────────────
 # HTTP HANDLER
 # ─────────────────────────────────────────────
@@ -354,6 +371,35 @@ class GitHandler(BaseHTTPRequestHandler):
 
             self.send_json(result)
             return
+
+        if path == "/api/edit_project":
+            name = body.get("name", "").strip()
+            if not name or name not in projects:
+                self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
+                return
+
+            # Preserva campos que não são editáveis pelo modal
+            existing = projects[name]
+            cfg = {
+                "path":        body.get("path", existing.get("path", "")).strip(),
+                "description": body.get("description", existing.get("description", "")),
+                "objective":   body.get("objective", existing.get("objective", "")),
+                "status":      body.get("status", existing.get("status", "em desenvolvimento")),
+                "stack":       [s.strip() for s in body.get("stack", "").split(",") if s.strip()],
+                "type":        body.get("type", existing.get("type", "other")),
+                "git_remote":  body.get("git_remote", existing.get("git_remote", "")),
+                "require_confirmation": existing.get("require_confirmation", ["git push", "git reset", "git rebase"]),
+            }
+
+            self.send_json(save_project(name, cfg))
+            return
+
+        if path == "/api/remove_project":
+            name = body.get("name", "").strip()
+            if not name:
+                self.send_json({"ok": False, "output": "Nome do projeto vazio"})
+                return
+            self.send_json(remove_project(name))
             return
 
         self.send_json({"ok": False, "output": "Rota não encontrada"}, 404)

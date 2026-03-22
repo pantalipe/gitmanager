@@ -18,6 +18,8 @@ A centralized dashboard to manage multiple Git projects from a single interface.
 - Push with mandatory confirmation modal
 - Open project in VS Code
 - Add new project via form (with optional `git init`)
+- Edit project metadata (description, stack, type, status, remote)
+- Remove project from registry (folder is never deleted)
 - Persistent project registry via `projects.json`
 
 ## Structure
@@ -59,9 +61,9 @@ Each project entry supports:
 
 ## Roadmap
 
-| Version | Features |
-|---------|----------|
-| v1.0 | Base manager — status, diff, commit, push, VS Code integration |
-| v1.1 | Edit/remove projects, git remote config via UI |
-| v2.0 | LLM integration via Ollama — README generation, commit message suggestions |
-| v2.1 | Edit LLM output before saving, choose model from UI |
+| Version | Status | Features |
+|---------|--------|----------|
+| v1.0 | ✅ done | Base manager — status, diff, commit, push, VS Code integration |
+| v1.1 | ✅ done | Edit/remove projects, git remote config via UI |
+| v2.0 | 🔜 planned | LLM integration via Ollama — README generation, commit message suggestions |
+| v2.1 | 🔜 planned | Edit LLM output before saving, choose model from UI |

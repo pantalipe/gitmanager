@@ -479,6 +479,74 @@ header {
   </div>
 </div>
 
+<!-- MODAL EDITAR PROJETO -->
+<div class="modal-overlay" id="editProjectModal">
+  <div class="modal" style="width:500px">
+    <h3>✎ Editar Projeto</h3>
+
+    <div style="display:grid;gap:10px;margin-bottom:20px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Tipo</div>
+          <select id="ep_type" class="model-selector" style="width:100%;padding:8px 10px;font-size:13px">
+            <option value="tool">🔧 Ferramenta</option>
+            <option value="frontend">🌐 Frontend</option>
+            <option value="contract">⛓️ Contrato</option>
+            <option value="automation">🤖 Automação</option>
+            <option value="sandbox">🧪 Sandbox</option>
+            <option value="other">📦 Outro</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Status</div>
+          <select id="ep_status" class="model-selector" style="width:100%;padding:8px 10px;font-size:13px">
+            <option value="em desenvolvimento">Em desenvolvimento</option>
+            <option value="produção">Produção</option>
+            <option value="experimento">Experimento</option>
+            <option value="sandbox">Sandbox</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Caminho da pasta</div>
+        <input id="ep_path" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Descrição</div>
+        <input id="ep_desc" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Objetivo</div>
+        <input id="ep_obj" class="commit-input" style="width:100%"/>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack <span style="color:var(--muted);font-size:9px">(separado por vírgula)</span></div>
+          <input id="ep_stack" class="commit-input" style="width:100%"/>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Git Remote</div>
+          <input id="ep_remote" class="commit-input" style="width:100%"/>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="ep_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn primary" onclick="submitEditProject()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NOVO PROJETO -->
 <div class="modal-overlay" id="newProjectModal">
   <div class="modal" style="width:500px">
@@ -662,6 +730,8 @@ async function selectProject(name) {
         <button class="btn" onclick="openInVscode()" title="Abre o projeto no VS Code">⌨ VS Code</button>
         <button class="btn warning" onclick="doPull()">⬇ Pull</button>
         <button class="btn danger" onclick="openPushModal()">⬆ Push</button>
+        <button class="btn" onclick="openEditModal()">✎ Editar</button>
+        <button class="btn danger" onclick="confirmRemove()">✕ Remover</button>
       </div>
     </div>
     <div class="content">
@@ -914,6 +984,88 @@ async function submitNewProject() {
 
 document.getElementById('newProjectModal').addEventListener('click', function(e) {
   if (e.target === this) closeNewProjectModal();
+});
+
+// ─────────────────────────────────────────────
+// EDITAR / REMOVER PROJETO
+// ─────────────────────────────────────────────
+function openEditModal() {
+  const cfg = projects[currentProject];
+  if (!cfg) return;
+
+  document.getElementById('ep_path').value   = cfg.path || '';
+  document.getElementById('ep_desc').value   = cfg.description || '';
+  document.getElementById('ep_obj').value    = cfg.objective || '';
+  document.getElementById('ep_stack').value  = (cfg.stack || []).join(', ');
+  document.getElementById('ep_remote').value = cfg.git_remote || '';
+  document.getElementById('ep_type').value   = cfg.type || 'other';
+  document.getElementById('ep_status').value = cfg.status || 'em desenvolvimento';
+  document.getElementById('ep_error').style.display = 'none';
+  document.getElementById('editProjectModal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editProjectModal').classList.remove('show');
+}
+
+async function submitEditProject() {
+  const errEl = document.getElementById('ep_error');
+  const body = {
+    name:        currentProject,
+    path:        document.getElementById('ep_path').value.trim(),
+    description: document.getElementById('ep_desc').value.trim(),
+    objective:   document.getElementById('ep_obj').value.trim(),
+    stack:       document.getElementById('ep_stack').value.trim(),
+    status:      document.getElementById('ep_status').value,
+    type:        document.getElementById('ep_type').value,
+    git_remote:  document.getElementById('ep_remote').value.trim(),
+  };
+
+  const data = await apiPost('/api/edit_project', body);
+
+  if (!data.ok) {
+    errEl.textContent = data.output;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  closeEditModal();
+  showToast(`✓ Projeto '${currentProject}' atualizado`);
+
+  // Recarrega projetos e re-seleciona o atual
+  const r = await fetch(`${API}/api/projects`);
+  projects = await r.json();
+  renderSidebar();
+  selectProject(currentProject);
+}
+
+async function confirmRemove() {
+  const confirmed = window.confirm(`Remover '${currentProject}' da lista?\n\nA pasta NÃO será deletada.`);
+  if (!confirmed) return;
+
+  const data = await apiPost('/api/remove_project', { name: currentProject });
+  if (!data.ok) {
+    showToast(`✗ ${data.output}`, true);
+    return;
+  }
+
+  showToast(`✓ Projeto '${currentProject}' removido`);
+  currentProject = null;
+
+  const r = await fetch(`${API}/api/projects`);
+  projects = await r.json();
+  renderSidebar();
+
+  // Volta à tela inicial
+  document.getElementById('mainArea').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">
+      <span style="font-size:40px;opacity:0.3">🐼</span>
+      <span style="font-size:12px">Selecione um projeto</span>
+    </div>`;
+}
+
+document.getElementById('editProjectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
 });
 
 // ─────────────────────────────────────────────
