@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import sys
+import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -80,6 +81,85 @@ def git_branches(path: str) -> dict:
 def git_commit(path: str, message: str) -> dict:
     run_git(path, ["add", "."])
     return run_git(path, ["commit", "-m", message])
+
+
+def git_diff_staged(path: str) -> dict:
+    """Retorna o diff staged (git add já feito) ou unstaged se não houver staged."""
+    staged = run_git(path, ["diff", "--cached"])
+    if staged["ok"] and staged["output"] and staged["output"] != "(sem output)":
+        return staged
+    return run_git(path, ["diff"])
+
+
+def get_ollama_models() -> dict:
+    """Retorna os modelos instalados no Ollama."""
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/tags",
+            headers={"Content-Type": "application/json"},
+            method="GET"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            models = [m["name"] for m in result.get("models", [])]
+            return {"ok": True, "models": models}
+    except Exception as e:
+        return {"ok": False, "models": [], "output": f"Ollama indisponível: {e}"}
+
+
+def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3") -> dict:
+    """Chama o Ollama localmente para sugerir uma mensagem de commit."""
+    diff = git_diff_staged(path)
+    status = git_status(path)
+
+    diff_text = diff.get("output", "").strip()
+    status_text = status.get("output", "").strip()
+
+    if not diff_text or diff_text == "(sem output)":
+        diff_text = "(sem diff disponível)"
+
+    context_block = f"\nContexto adicional do desenvolvedor: {user_context}" if user_context.strip() else ""
+
+    prompt = f"""Você é um assistente de desenvolvimento. Analise o diff e o status abaixo e gere UMA mensagem de commit clara e objetiva em português, seguindo o padrão convencional (feat, fix, refactor, docs, chore, etc).
+
+Responda APENAS com a mensagem de commit, sem explicações, sem aspas, sem prefixo extra.
+{context_block}
+
+Status:
+{status_text}
+
+Diff:
+{diff_text[:3000]}
+"""
+
+    payload = json.dumps({
+        "model": model,
+        "prompt": prompt,
+        "stream": False
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/generate",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=None) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            message = result.get("response", "").strip()
+            if not message:
+                return {"ok": False, "output": "Ollama retornou resposta vazia."}
+            return {"ok": True, "output": message}
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8")
+        except Exception:
+            pass
+        return {"ok": False, "output": f"Ollama HTTP {e.code}: {e.reason}. Detalhe: {body or '(sem detalhe)'}"}
+    except Exception as e:
+        return {"ok": False, "output": f"Erro ao chamar Ollama: {e}"}
 
 
 def git_push(path: str, remote: str = "origin", branch: str = "") -> dict:
@@ -238,6 +318,10 @@ class GitHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "output": "Projeto não encontrado"}, 404)
                 return
             self.send_json(git_log(projects[name]["path"]))
+            return
+
+        if path == "/api/ollama_models":
+            self.send_json(get_ollama_models())
             return
 
         if path == "/api/branches":
@@ -400,6 +484,21 @@ class GitHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "output": "Nome do projeto vazio"})
                 return
             self.send_json(remove_project(name))
+            return
+
+        if path == "/api/ollama_models":
+            # GET exposto via POST também para simplicidade
+            self.send_json(get_ollama_models())
+            return
+
+        if path == "/api/suggest_commit":
+            proj_path, name = get_project_path(body)
+            if not proj_path:
+                self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
+                return
+            user_context = body.get("context", "").strip()
+            model = body.get("model", "phi3")
+            self.send_json(suggest_commit_message(proj_path, user_context, model))
             return
 
         self.send_json({"ok": False, "output": "Rota não encontrada"}, 404)

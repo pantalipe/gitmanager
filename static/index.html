@@ -751,17 +751,23 @@ async function selectProject(name) {
       </div>
       <div class="commit-area">
         <div style="flex:1;display:grid;gap:6px">
-          <input
-            class="commit-input"
-            id="commitMsg"
-            placeholder="Mensagem do commit..."
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()"
-            style="width:100%"
-          />
+          <div style="display:flex;gap:8px;align-items:center">
+            <input
+              class="commit-input"
+              id="commitMsg"
+              placeholder="Mensagem do commit..."
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()"
+              style="flex:1"
+            />
+            <select id="ollamaModel" class="model-selector" style="padding:7px 10px;font-size:12px;border:1px solid var(--border2);flex-shrink:0" title="Modelo Ollama">
+              <option value="">carregando...</option>
+            </select>
+            <button class="btn" id="suggestBtn" onclick="doSuggestCommit()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Sugerir mensagem via Ollama">✨ Sugerir</button>
+          </div>
           <input
             class="commit-input"
             id="commitContext"
-            placeholder="O que você alterou nesta versão? (opcional — melhora a mensagem gerada pelo LLM no futuro)"
+            placeholder="Contexto opcional — o que você alterou? (ajuda o LLM a gerar melhor mensagem)"
             style="width:100%;font-size:11px;opacity:0.7"
           />
         </div>
@@ -771,6 +777,7 @@ async function selectProject(name) {
   `;
 
   loadStatus();
+  loadOllamaModels();
 }
 
 // ─────────────────────────────────────────────
@@ -899,6 +906,52 @@ async function doCommit() {
   if (data.ok) {
     document.getElementById('commitMsg').value = '';
     loadStatus();
+  }
+}
+
+async function loadOllamaModels() {
+  const select = document.getElementById('ollamaModel');
+  if (!select) return;
+
+  const data = await api('/api/ollama_models');
+
+  if (!data.ok || !data.models.length) {
+    select.innerHTML = '<option value="">Ollama indisponível</option>';
+    return;
+  }
+
+  select.innerHTML = data.models
+    .map(m => `<option value="${m}">${m}</option>`)
+    .join('');
+}
+
+async function doSuggestCommit() {
+  const btn = document.getElementById('suggestBtn');
+  const input = document.getElementById('commitMsg');
+  const context = document.getElementById('commitContext')?.value?.trim() || '';
+  const model = document.getElementById('ollamaModel')?.value || 'phi3';
+
+  if (!currentProject) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  showToast(`Consultando Ollama (${model})...`);
+
+  const data = await apiPost('/api/suggest_commit', {
+    project: currentProject,
+    context,
+    model,
+  });
+
+  btn.disabled = false;
+  btn.textContent = '✨ Sugerir';
+
+  if (data.ok) {
+    input.value = data.output;
+    input.focus();
+    showToast('✓ Mensagem sugerida pelo Ollama');
+  } else {
+    showToast(`✗ ${data.output}`, true);
   }
 }
 
