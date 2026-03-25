@@ -120,9 +120,9 @@ def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3
 
     context_block = f"\nContexto adicional do desenvolvedor: {user_context}" if user_context.strip() else ""
 
-    prompt = f"""Você é um assistente de desenvolvimento. Analise o diff e o status abaixo e gere UMA mensagem de commit clara e objetiva em português, seguindo o padrão convencional (feat, fix, refactor, docs, chore, etc).
+    prompt = f"""You are a development assistant. Analyze the diff and status below and generate ONE clear and objective commit message in English, following the conventional commits standard (feat, fix, refactor, docs, chore, etc).
 
-Responda APENAS com a mensagem de commit, sem explicações, sem aspas, sem prefixo extra.
+Reply ONLY with the commit message, no explanations, no quotes, no extra prefix.
 {context_block}
 
 Status:
