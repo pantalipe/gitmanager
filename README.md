@@ -15,6 +15,7 @@ A centralized dashboard to manage multiple Git projects from a single interface.
 - Branch management — create and checkout
 - Commit with optional context field (used by LLM to improve suggestion)
 - Commit message suggestion via Ollama (model auto-loaded from local installation)
+- README generation via Ollama with side-by-side comparison modal (existing vs generated)
 - Pull
 - Push with mandatory confirmation modal
 - Open project in VS Code
@@ -67,4 +68,5 @@ Each project entry supports:
 | v1.0 | ✅ done | Base manager — status, diff, commit, push, VS Code integration |
 | v1.1 | ✅ done | Edit/remove projects, git remote config via UI |
 | v2.0 | ✅ done | LLM integration via Ollama — commit message suggestions, dynamic model selector |
-| v2.1 | 🔜 planned | README generation via LLM |
+| v2.1 | ✅ done | README generation via Ollama with side-by-side comparison modal |
+| v3.0 | 🔜 planned | — |
