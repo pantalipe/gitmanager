@@ -107,6 +107,116 @@ def get_ollama_models() -> dict:
         return {"ok": False, "models": [], "output": f"Ollama indisponível: {e}"}
 
 
+def scan_project_structure(path: str) -> str:
+    """Escaneia a estrutura do projeto para contextualizar o LLM."""
+    root = Path(path)
+    ignore = {'.git', 'node_modules', '__pycache__', '.next', 'dist', 'build', '.env', 'venv', '.venv'}
+
+    lines = []
+    for item in sorted(root.rglob('*')):
+        # Ignora pastas bloqueadas
+        if any(p in item.parts for p in ignore):
+            continue
+        rel = item.relative_to(root)
+        depth = len(rel.parts) - 1
+        if depth > 3:
+            continue
+        prefix = '  ' * depth
+        if item.is_dir():
+            lines.append(f"{prefix}[{rel.name}/]")
+        else:
+            lines.append(f"{prefix}{rel.name}")
+
+    # Lê arquivos de contexto se existirem
+    extras = []
+    for fname in ['package.json', 'requirements.txt', 'pyproject.toml', 'Cargo.toml']:
+        fpath = root / fname
+        if fpath.exists():
+            try:
+                content = fpath.read_text(encoding='utf-8', errors='replace')[:800]
+                extras.append(f"\n--- {fname} ---\n{content}")
+            except Exception:
+                pass
+
+    return '\n'.join(lines) + ''.join(extras)
+
+
+def get_existing_readme(path: str) -> str:
+    """Retorna o conteúdo do README.md existente ou string vazia."""
+    readme = Path(path) / 'README.md'
+    if readme.exists():
+        try:
+            return readme.read_text(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+    return ''
+
+
+def save_readme(path: str, content: str) -> dict:
+    """Salva o README.md no projeto."""
+    try:
+        readme = Path(path) / 'README.md'
+        readme.write_text(content, encoding='utf-8')
+        return {'ok': True, 'output': 'README.md salvo com sucesso.'}
+    except Exception as e:
+        return {'ok': False, 'output': str(e)}
+
+
+def generate_readme(path: str, project_cfg: dict, model: str = 'phi3') -> dict:
+    """Chama o Ollama para gerar um README baseado na estrutura do projeto."""
+    structure = scan_project_structure(path)
+    name        = project_cfg.get('name', Path(path).name)
+    description = project_cfg.get('description', '')
+    objective   = project_cfg.get('objective', '')
+    stack       = ', '.join(project_cfg.get('stack', []))
+    status      = project_cfg.get('status', '')
+
+    prompt = f"""You are a technical writer. Generate a clean and professional README.md in English for the project below.
+
+Use markdown. Include: project name, short description, what it does, main features, stack, how to run (if inferable), and project structure.
+Do NOT include license section. Keep it concise and developer-focused.
+Reply ONLY with the raw markdown content, no explanations, no code fences around the whole file.
+
+Project name: {name}
+Description: {description}
+Objective: {objective}
+Stack: {stack}
+Status: {status}
+
+File structure:
+{structure}
+"""
+
+    payload = json.dumps({
+        'model': model,
+        'prompt': prompt,
+        'stream': False
+    }).encode('utf-8')
+
+    try:
+        req = urllib.request.Request(
+            'http://127.0.0.1:11434/api/generate',
+            data=payload,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=None) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+            content = result.get('response', '').strip()
+            if not content:
+                return {'ok': False, 'output': 'Ollama retornou resposta vazia.'}
+            return {'ok': True, 'output': content}
+    except urllib.error.HTTPError as e:
+        body = ''
+        try:
+            body = e.read().decode('utf-8')
+        except Exception:
+            pass
+        return {'ok': False, 'output': f'Ollama HTTP {e.code}: {e.reason}. Detalhe: {body or "(sem detalhe)"}'}
+    except Exception as e:
+        return {'ok': False, 'output': f'Erro ao chamar Ollama: {e}'}
+
+
 def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3") -> dict:
     """Chama o Ollama localmente para sugerir uma mensagem de commit."""
     diff = git_diff_staged(path)
@@ -487,8 +597,33 @@ class GitHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/ollama_models":
-            # GET exposto via POST também para simplicidade
             self.send_json(get_ollama_models())
+            return
+
+        if path == "/api/generate_readme":
+            proj_path, name = get_project_path(body)
+            if not proj_path:
+                self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
+                return
+            model = body.get("model", "phi3")
+            cfg = {**projects.get(name, {}), "name": name}
+            existing = get_existing_readme(proj_path)
+            result = generate_readme(proj_path, cfg, model)
+            if result["ok"]:
+                result["existing"] = existing
+            self.send_json(result)
+            return
+
+        if path == "/api/save_readme":
+            proj_path, name = get_project_path(body)
+            if not proj_path:
+                self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
+                return
+            content = body.get("content", "").strip()
+            if not content:
+                self.send_json({"ok": False, "output": "Conteúdo vazio"})
+                return
+            self.send_json(save_readme(proj_path, content))
             return
 
         if path == "/api/suggest_commit":

@@ -465,6 +465,32 @@ header {
 
 </div>
 
+<!-- MODAL README -->
+<div class="modal-overlay" id="readmeModal">
+  <div class="modal" style="width:860px;max-width:95vw">
+    <h3>📄 README gerado pelo Ollama</h3>
+    <p style="margin-bottom:12px">Revise e edite antes de salvar. O arquivo <code style="font-size:11px">README.md</code> será sobrescrito na pasta do projeto.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Atual <span id="readmeExistingLabel" style="color:var(--green)"></span></div>
+        <textarea id="readmeExisting" style="width:100%;height:340px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:10px;resize:none;outline:none" readonly placeholder="(sem README atual)"></textarea>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Gerado pelo LLM <span style="color:var(--blue);font-size:9px">— editável</span></div>
+        <textarea id="readmeGenerated" style="width:100%;height:340px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:10px;resize:none;outline:none;transition:border-color 0.15s" placeholder="" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'" ></textarea>
+      </div>
+    </div>
+
+    <div id="readme_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeReadmeModal()">Cancelar</button>
+      <button class="btn primary" onclick="doSaveReadme()">Salvar README.md</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PUSH -->
 <div class="modal-overlay" id="pushModal">
   <div class="modal">
@@ -728,6 +754,7 @@ async function selectProject(name) {
         <button class="btn" onclick="loadLog()">📋 Log</button>
         <button class="btn" onclick="loadBranches()">⎇ Branches</button>
         <button class="btn" onclick="openInVscode()" title="Abre o projeto no VS Code">⌨ VS Code</button>
+        <button class="btn" id="readmeBtn" onclick="doGenerateReadme()" style="border-color:var(--blue);color:var(--blue)" title="Gerar README via Ollama">📄 README</button>
         <button class="btn warning" onclick="doPull()">⬇ Pull</button>
         <button class="btn danger" onclick="openPushModal()">⬆ Push</button>
         <button class="btn" onclick="openEditModal()">✎ Editar</button>
@@ -908,6 +935,74 @@ async function doCommit() {
     loadStatus();
   }
 }
+
+async function doGenerateReadme() {
+  const btn = document.getElementById('readmeBtn');
+  const model = document.getElementById('ollamaModel')?.value || 'phi3';
+
+  if (!currentProject) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Gerando...';
+  showToast(`Gerando README com Ollama (${model})...`);
+
+  const data = await apiPost('/api/generate_readme', {
+    project: currentProject,
+    model,
+  });
+
+  btn.disabled = false;
+  btn.textContent = '📄 README';
+
+  if (!data.ok) {
+    showToast(`✗ ${data.output}`, true);
+    return;
+  }
+
+  const existingEl = document.getElementById('readmeExisting');
+  const generatedEl = document.getElementById('readmeGenerated');
+  const labelEl = document.getElementById('readmeExistingLabel');
+
+  existingEl.value = data.existing || '';
+  generatedEl.value = data.output;
+  labelEl.textContent = data.existing ? '— existente' : '— nenhum';
+
+  document.getElementById('readme_error').style.display = 'none';
+  document.getElementById('readmeModal').classList.add('show');
+}
+
+function closeReadmeModal() {
+  document.getElementById('readmeModal').classList.remove('show');
+}
+
+async function doSaveReadme() {
+  const content = document.getElementById('readmeGenerated').value.trim();
+  const errEl = document.getElementById('readme_error');
+
+  if (!content) {
+    errEl.textContent = 'Conteúdo vazio.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const data = await apiPost('/api/save_readme', {
+    project: currentProject,
+    content,
+  });
+
+  if (!data.ok) {
+    errEl.textContent = data.output;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  closeReadmeModal();
+  showToast('✓ README.md salvo com sucesso');
+}
+
+document.getElementById('readmeModal').addEventListener('click', function(e) {
+  if (e.target === this) closeReadmeModal();
+});
 
 async function loadOllamaModels() {
   const select = document.getElementById('ollamaModel');
