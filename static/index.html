@@ -600,7 +600,10 @@ header {
 
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Caminho da pasta *</div>
-        <input id="np_path" placeholder="C:/Users/panta/Desktop/meu-projeto" class="commit-input" style="width:100%"/>
+        <div style="display:flex;gap:8px">
+          <input id="np_path" placeholder="C:/Users/panta/Desktop/meu-projeto" class="commit-input" style="flex:1"/>
+          <button class="btn" id="detectBtn" onclick="doDetectProject()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Detectar informações do .git">&#128270; Carregar</button>
+        </div>
       </div>
 
       <div>
@@ -1076,6 +1079,43 @@ async function doCheckout() {
 // ─────────────────────────────────────────────
 // NOVO PROJETO MODAL
 // ─────────────────────────────────────────────
+async function doDetectProject() {
+  const pathInput = document.getElementById('np_path');
+  const btn = document.getElementById('detectBtn');
+  const errEl = document.getElementById('np_error');
+  const projPath = pathInput.value.trim();
+
+  if (!projPath) {
+    errEl.textContent = 'Informe o caminho da pasta primeiro.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Detectando...';
+  errEl.style.display = 'none';
+
+  const encoded = encodeURIComponent(projPath);
+  const data = await api(`/api/detect_project?path=${encoded}`);
+
+  btn.disabled = false;
+  btn.textContent = '🔎 Carregar';
+
+  if (!data.ok) {
+    errEl.textContent = data.output;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Preenche os campos automaticamente
+  document.getElementById('np_name').value   = data.name || '';
+  document.getElementById('np_remote').value = data.git_remote || '';
+  document.getElementById('np_stack').value  = (data.stack || []).join(', ');
+  if (data.type) document.getElementById('np_type').value = data.type;
+
+  showToast(`✓ Projeto detectado: ${data.name}`);
+}
+
 function openNewProjectModal() {
   ['np_name','np_path','np_desc','np_obj','np_stack','np_remote'].forEach(id => {
     const el = document.getElementById(id);

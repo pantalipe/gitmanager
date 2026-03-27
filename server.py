@@ -302,6 +302,64 @@ def open_vscode(path: str) -> dict:
     return run_git(path, ["init"])
 
 
+def detect_project_from_path(path: str) -> dict:
+    """Detecta informações do projeto a partir de uma pasta com .git."""
+    root = Path(path)
+    if not root.exists():
+        return {"ok": False, "output": f"Pasta não encontrada: {path}"}
+    if not (root / ".git").exists():
+        return {"ok": False, "output": "Nenhum repositório .git encontrado nesta pasta."}
+
+    name = root.name
+
+    # Tenta pegar o remote origin
+    remote = run_git(path, ["remote", "get-url", "origin"])
+    git_remote = remote["output"] if remote["ok"] else ""
+
+    # Tenta pegar a stack detectando arquivos conhecidos
+    stack_hints = {
+        "package.json":      "javascript",
+        "requirements.txt": "python",
+        "pyproject.toml":   "python",
+        "Cargo.toml":       "rust",
+        "go.mod":           "go",
+        "pom.xml":          "java",
+        "*.sol":            "solidity",
+    }
+    stack = []
+    for fname, lang in stack_hints.items():
+        if fname.startswith("*"):
+            ext = fname[1:]
+            if any(root.glob(f"**/*{ext}")):
+                stack.append(lang)
+        elif (root / fname).exists():
+            stack.append(lang)
+
+    # Tenta detectar tipo
+    project_type = "other"
+    if any(root.glob("**/*.sol")):
+        project_type = "contract"
+    elif (root / "package.json").exists():
+        try:
+            pkg = json.loads((root / "package.json").read_text(encoding="utf-8", errors="replace"))
+            deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
+            if any(k in deps for k in ["next", "react", "vue", "svelte"]):
+                project_type = "frontend"
+        except Exception:
+            pass
+    elif any(root.glob("**/*.py")):
+        project_type = "tool"
+
+    return {
+        "ok": True,
+        "name": name,
+        "path": str(root),
+        "git_remote": git_remote.strip(),
+        "stack": stack,
+        "type": project_type,
+    }
+
+
 def save_project(name: str, cfg: dict) -> dict:
     """Adiciona ou atualiza um projeto no projects.json."""
     try:
@@ -432,6 +490,14 @@ class GitHandler(BaseHTTPRequestHandler):
 
         if path == "/api/ollama_models":
             self.send_json(get_ollama_models())
+            return
+
+        if path == "/api/detect_project":
+            proj_path = params.get("path", [""])[0]
+            if not proj_path:
+                self.send_json({"ok": False, "output": "Caminho não informado"}, 400)
+                return
+            self.send_json(detect_project_from_path(proj_path))
             return
 
         if path == "/api/branches":
