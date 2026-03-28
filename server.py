@@ -78,6 +78,16 @@ def git_branches(path: str) -> dict:
     return run_git(path, ["branch", "-a"])
 
 
+def git_init(path: str) -> dict:
+    """Inicializa um repositório git na pasta."""
+    return run_git(path, ["init"])
+
+
+def git_new_branch(path: str, branch: str) -> dict:
+    """Cria e faz checkout de uma nova branch."""
+    return run_git(path, ["checkout", "-b", branch])
+
+
 def git_commit(path: str, message: str) -> dict:
     run_git(path, ["add", "."])
     return run_git(path, ["commit", "-m", message])
