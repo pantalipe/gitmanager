@@ -151,6 +151,29 @@ header {
 .project-dot.dirty  { background: var(--yellow); }
 .project-dot.nopath { background: var(--muted); }
 
+/* ── SIDEBAR SEARCH ── */
+.sidebar-search {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-search input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 5px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.sidebar-search input:focus { border-color: var(--green); }
+.sidebar-search input::placeholder { color: var(--muted); }
+
 /* ── MAIN ── */
 .main {
   display: grid;
@@ -447,9 +470,17 @@ header {
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-header">
-    Projetos
-    <button class="btn" onclick="openNewProjectModal()" style="padding:2px 8px;font-size:10px;margin-left:auto">＋</button>
-  </div>
+      Projetos
+      <button class="btn" onclick="openNewProjectModal()" style="padding:2px 8px;font-size:10px;margin-left:auto">＋</button>
+    </div>
+    <div class="sidebar-search">
+      <input
+        type="text"
+        id="sidebarSearch"
+        placeholder="🔍 buscar projeto..."
+        oninput="filterProjects(this.value)"
+      />
+    </div>
     <div class="project-list" id="projectList">
       <div class="loading">carregando</div>
     </div>
@@ -712,11 +743,11 @@ function renderSidebar() {
 
   for (const type of order) {
     if (!grouped[type]) continue;
-    html += `<div class="project-group-label">${TYPE_LABELS[type] || type}</div>`;
+    html += `<div class="project-group-label" data-group="${type}">${TYPE_LABELS[type] || type}</div>`;
     for (const [name, cfg] of grouped[type]) {
       const icon = TYPE_ICONS[type] || '📦';
       html += `
-        <div class="project-item" id="item-${name}" onclick="selectProject('${name}')">
+        <div class="project-item" id="item-${name}" data-group="${type}" onclick="selectProject('${name}')">
           <span class="project-icon">${icon}</span>
           <span class="project-name">${name}</span>
           <span class="project-dot nopath" id="dot-${name}"></span>
@@ -725,6 +756,32 @@ function renderSidebar() {
   }
 
   document.getElementById('projectList').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR FILTER
+// ─────────────────────────────────────────────
+function filterProjects(query) {
+  const q = query.trim().toLowerCase();
+  const items = document.querySelectorAll('#projectList .project-item');
+  const labels = document.querySelectorAll('#projectList .project-group-label');
+
+  // Mostra/oculta itens
+  const visibleByGroup = {};
+  items.forEach(item => {
+    const name = item.querySelector('.project-name')?.textContent?.toLowerCase() || '';
+    const visible = !q || name.includes(q);
+    item.style.display = visible ? '' : 'none';
+    // Rastreia quais grupos têm itens visíveis
+    const group = item.dataset.group;
+    if (visible) visibleByGroup[group] = true;
+  });
+
+  // Oculta labels de grupos sem itens visíveis
+  labels.forEach(label => {
+    const group = label.dataset.group;
+    label.style.display = visibleByGroup[group] ? '' : 'none';
+  });
 }
 
 // ─────────────────────────────────────────────
