@@ -48,7 +48,7 @@ def run_git(path: str, args: list[str]) -> dict:
             encoding="utf-8",
             errors="replace",
         )
-        output = result.stdout or result.stderr or "(sem output)"
+        output = result.stdout or result.stderr or "(no output)"
         return {"ok": result.returncode == 0, "output": output.strip(), "code": result.returncode}
     except FileNotFoundError:
         return {"ok": False, "output": "Git não encontrado. Instale o git.", "code": -1}
@@ -96,7 +96,7 @@ def git_commit(path: str, message: str) -> dict:
 def git_diff_staged(path: str) -> dict:
     """Retorna o diff staged (git add já feito) ou unstaged se não houver staged."""
     staged = run_git(path, ["diff", "--cached"])
-    if staged["ok"] and staged["output"] and staged["output"] != "(sem output)":
+    if staged["ok"] and staged["output"] and staged["output"] != "(no output)":
         return staged
     return run_git(path, ["diff"])
 
@@ -235,7 +235,7 @@ def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3
     diff_text = diff.get("output", "").strip()
     status_text = status.get("output", "").strip()
 
-    if not diff_text or diff_text == "(sem output)":
+    if not diff_text or diff_text == "(no output)":
         diff_text = "(sem diff disponível)"
 
     context_block = f"\nContexto adicional do desenvolvedor: {user_context}" if user_context.strip() else ""

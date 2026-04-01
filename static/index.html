@@ -813,12 +813,12 @@ async function selectProject(name) {
         <button class="btn" onclick="loadDiff(false)">~ Diff</button>
         <button class="btn" onclick="loadLog()">📋 Log</button>
         <button class="btn" onclick="loadBranches()">⎇ Branches</button>
-        <button class="btn" onclick="openInVscode()" title="Abre o projeto no VS Code">⌨ VS Code</button>
-        <button class="btn" id="readmeBtn" onclick="doGenerateReadme()" style="border-color:var(--blue);color:var(--blue)" title="Gerar README via Ollama">📄 README</button>
+        <button class="btn" onclick="openInVscode()" title="Open project in VS Code">⌨ VS Code</button>
+        <button class="btn" id="readmeBtn" onclick="doGenerateReadme()" style="border-color:var(--blue);color:var(--blue)" title="Generate README via Ollama">📄 README</button>
         <button class="btn warning" onclick="doPull()">⬇ Pull</button>
         <button class="btn danger" onclick="openPushModal()">⬆ Push</button>
-        <button class="btn" onclick="openEditModal()">✎ Editar</button>
-        <button class="btn danger" onclick="confirmRemove()">✕ Remover</button>
+        <button class="btn" onclick="openEditModal()">✎ Edit</button>
+        <button class="btn danger" onclick="confirmRemove()">✕ Remove</button>
       </div>
     </div>
     <div class="content">
@@ -827,14 +827,14 @@ async function selectProject(name) {
           Status
           <span class="badge" id="statusBadge">—</span>
         </div>
-        <div class="panel-body" id="statusPanel"><span style="color:var(--muted)">Clique em ↻ Status</span></div>
+        <div class="panel-body" id="statusPanel"><span style="color:var(--muted)">Click ↻ Status</span></div>
       </div>
       <div class="panel">
         <div class="panel-header">
           Diff / Log / Branches
-          <button class="btn" style="padding:2px 8px;font-size:10px" onclick="loadDiff(true)">diff completo</button>
+          <button class="btn" style="padding:2px 8px;font-size:10px" onclick="loadDiff(true)">full diff</button>
         </div>
-        <div class="panel-body" id="diffPanel"><span style="color:var(--muted)">Clique em ~ Diff, 📋 Log ou ⎇ Branches</span></div>
+        <div class="panel-body" id="diffPanel"><span style="color:var(--muted)">Click ~ Diff, 📋 Log or ⍟ Branches</span></div>
       </div>
       <div class="commit-area">
         <div style="flex:1;display:grid;gap:6px">
@@ -842,19 +842,19 @@ async function selectProject(name) {
             <input
               class="commit-input"
               id="commitMsg"
-              placeholder="Mensagem do commit..."
+              placeholder="Commit message..."
               onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()"
               style="flex:1"
             />
-            <select id="ollamaModel" class="model-selector" style="padding:7px 10px;font-size:12px;border:1px solid var(--border2);flex-shrink:0" title="Modelo Ollama">
-              <option value="">carregando...</option>
+            <select id="ollamaModel" class="model-selector" style="padding:7px 10px;font-size:12px;border:1px solid var(--border2);flex-shrink:0" title="Ollama model">
+              <option value="">loading...</option>
             </select>
-            <button class="btn" id="suggestBtn" onclick="doSuggestCommit()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Sugerir mensagem via Ollama">✨ Sugerir</button>
+            <button class="btn" id="suggestBtn" onclick="doSuggestCommit()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Suggest message via Ollama">✨ Suggest</button>
           </div>
           <input
             class="commit-input"
             id="commitContext"
-            placeholder="Contexto opcional — o que você alterou? (ajuda o LLM a gerar melhor mensagem)"
+            placeholder="Optional context — what did you change? (helps the LLM generate a better message)"
             style="width:100%;font-size:11px;opacity:0.7"
           />
         </div>
@@ -871,7 +871,7 @@ async function selectProject(name) {
 // GIT ACTIONS
 // ─────────────────────────────────────────────
 async function loadStatus() {
-  setPanel('statusPanel', '<span class="loading">carregando</span>');
+  setPanel('statusPanel', '<span class="loading">loading</span>');
   const data = await api(`/api/status?project=${currentProject}`);
   const lines = (data.output || '').split('\n');
 
@@ -938,7 +938,7 @@ async function loadDiff(full) {
 }
 
 async function loadLog() {
-  setPanel('diffPanel', '<span class="loading">carregando</span>');
+  setPanel('diffPanel', '<span class="loading">loading</span>');
   const data = await api(`/api/log?project=${currentProject}`);
   const lines = (data.output || '').split('\n');
 
@@ -956,7 +956,7 @@ async function loadLog() {
 }
 
 async function loadBranches() {
-  setPanel('diffPanel', '<span class="loading">carregando</span>');
+  setPanel('diffPanel', '<span class="loading">loading</span>');
   const data = await api(`/api/branches?project=${currentProject}`);
   const lines = (data.output || '').split('\n');
 
@@ -971,7 +971,7 @@ async function loadBranches() {
 
   html += `
     <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <input id="branchInput" placeholder="nova-branch" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;outline:none;width:160px" />
+      <input id="branchInput" placeholder="new-branch" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;outline:none;width:160px" />
       <button class="btn" onclick="doNewBranch()" style="font-size:11px;padding:5px 10px">+ New branch</button>
       <button class="btn" onclick="doCheckout()" style="font-size:11px;padding:5px 10px">→ Checkout</button>
     </div>`;
@@ -1099,7 +1099,7 @@ async function doSuggestCommit() {
   });
 
   btn.disabled = false;
-  btn.textContent = '✨ Sugerir';
+  btn.textContent = '✨ Suggest';
 
   if (data.ok) {
     input.value = data.output;
@@ -1244,7 +1244,7 @@ function openEditModal() {
   document.getElementById('ep_stack').value  = (cfg.stack || []).join(', ');
   document.getElementById('ep_remote').value = cfg.git_remote || '';
   document.getElementById('ep_type').value   = cfg.type || 'other';
-  document.getElementById('ep_status').value = cfg.status || 'em desenvolvimento';
+  document.getElementById('ep_status').value = cfg.status || 'in development';
   document.getElementById('ep_error').style.display = 'none';
   document.getElementById('editProjectModal').classList.add('show');
 }
@@ -1305,7 +1305,7 @@ async function confirmRemove() {
   document.getElementById('mainArea').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">
       <span style="font-size:40px;opacity:0.3">🐼</span>
-      <span style="font-size:12px">Selecione um projeto</span>
+      <span style="font-size:12px">Select a project</span>
     </div>`;
 }
 
@@ -1360,7 +1360,7 @@ async function apiPost(url, body) {
     });
     return await r.json();
   } catch(e) {
-    return { ok: false, output: 'Erro de conexão com o servidor' };
+    return { ok: false, output: 'Connection error' };
   }
 }
 
