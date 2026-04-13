@@ -69,4 +69,4 @@ Each project entry supports:
 | v1.1 | ✅ done | Edit/remove projects, git remote config via UI |
 | v2.0 | ✅ done | LLM integration via Ollama — commit message suggestions, dynamic model selector |
 | v2.1 | ✅ done | README generation via Ollama with side-by-side comparison modal |
-| v3.0 | 🔜 planned | — |
+| v3.0 | 🔜 planned | pandagent integration — delegate LLM tasks to the agent for richer context-aware suggestions; auto-detect project load on startup |
