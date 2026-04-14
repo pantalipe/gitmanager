@@ -16,6 +16,19 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+# ── PandaClient (shared LLM module) ─────────────────────────────────────────
+# Imports from pandagent — single point of contact with Ollama.
+_PANDAGENT_PATH = str(Path(__file__).parent.parent / "pandagent")
+if _PANDAGENT_PATH not in sys.path:
+    sys.path.insert(0, _PANDAGENT_PATH)
+
+try:
+    from panda_client import PandaClient
+    _panda = PandaClient()
+    _PANDA_AVAILABLE = True
+except ImportError:
+    _PANDA_AVAILABLE = False
+
 PROJECTS_FILE = Path(__file__).parent / "projects.json"
 PORT = 8765
 STATIC_DIR = Path(__file__).parent / "static"
@@ -102,19 +115,22 @@ def git_diff_staged(path: str) -> dict:
 
 
 def get_ollama_models() -> dict:
-    """Retorna os modelos instalados no Ollama."""
+    """Returns installed Ollama models via PandaClient."""
+    if _PANDA_AVAILABLE:
+        models = _panda.available_models()
+        if models:
+            return {"ok": True, "models": models}
+        return {"ok": False, "models": [], "output": "Ollama unavailable or no models installed."}
+    # Fallback direto caso PandaClient não esteja disponível
     try:
         req = urllib.request.Request(
-            "http://127.0.0.1:11434/api/tags",
-            headers={"Content-Type": "application/json"},
-            method="GET"
+            "http://127.0.0.1:11434/api/tags", method="GET"
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-            models = [m["name"] for m in result.get("models", [])]
-            return {"ok": True, "models": models}
+            return {"ok": True, "models": [m["name"] for m in result.get("models", [])]}
     except Exception as e:
-        return {"ok": False, "models": [], "output": f"Ollama indisponível: {e}"}
+        return {"ok": False, "models": [], "output": f"Ollama unavailable: {e}"}
 
 
 def scan_project_structure(path: str) -> str:
@@ -124,7 +140,6 @@ def scan_project_structure(path: str) -> str:
 
     lines = []
     for item in sorted(root.rglob('*')):
-        # Ignora pastas bloqueadas
         if any(p in item.parts for p in ignore):
             continue
         rel = item.relative_to(root)
@@ -172,14 +187,27 @@ def save_readme(path: str, content: str) -> dict:
         return {'ok': False, 'output': str(e)}
 
 
-def generate_readme(path: str, project_cfg: dict, model: str = 'phi3') -> dict:
-    """Chama o Ollama para gerar um README baseado na estrutura do projeto."""
+def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
+    """Generates a README.md using PandaClient."""
     structure = scan_project_structure(path)
-    name        = project_cfg.get('name', Path(path).name)
-    description = project_cfg.get('description', '')
-    objective   = project_cfg.get('objective', '')
-    stack       = ', '.join(project_cfg.get('stack', []))
-    status      = project_cfg.get('status', '')
+
+    if _PANDA_AVAILABLE:
+        _panda.text_model = model
+        return _panda.generate_readme(
+            project_name=project_cfg.get("name", Path(path).name),
+            description=project_cfg.get("description", ""),
+            objective=project_cfg.get("objective", ""),
+            stack=project_cfg.get("stack", []),
+            status=project_cfg.get("status", ""),
+            file_structure=structure,
+        )
+
+    # Fallback direto caso PandaClient não esteja disponível
+    name        = project_cfg.get("name", Path(path).name)
+    description = project_cfg.get("description", "")
+    objective   = project_cfg.get("objective", "")
+    stack       = ", ".join(project_cfg.get("stack", []))
+    status      = project_cfg.get("status", "")
 
     prompt = f"""You are a technical writer. Generate a clean and professional README.md in English for the project below.
 
@@ -196,50 +224,42 @@ Status: {status}
 File structure:
 {structure}
 """
-
-    payload = json.dumps({
-        'model': model,
-        'prompt': prompt,
-        'stream': False
-    }).encode('utf-8')
-
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
         req = urllib.request.Request(
-            'http://127.0.0.1:11434/api/generate',
+            "http://127.0.0.1:11434/api/generate",
             data=payload,
-            headers={'Content-Type': 'application/json'},
-            method='POST'
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
         with urllib.request.urlopen(req, timeout=None) as resp:
-            result = json.loads(resp.read().decode('utf-8'))
-            content = result.get('response', '').strip()
+            result = json.loads(resp.read().decode("utf-8"))
+            content = result.get("response", "").strip()
             if not content:
-                return {'ok': False, 'output': 'Ollama retornou resposta vazia.'}
-            return {'ok': True, 'output': content}
-    except urllib.error.HTTPError as e:
-        body = ''
-        try:
-            body = e.read().decode('utf-8')
-        except Exception:
-            pass
-        return {'ok': False, 'output': f'Ollama HTTP {e.code}: {e.reason}. Detalhe: {body or "(sem detalhe)"}'}
+                return {"ok": False, "output": "Ollama returned empty response."}
+            return {"ok": True, "output": content}
     except Exception as e:
-        return {'ok': False, 'output': f'Erro ao chamar Ollama: {e}'}
+        return {"ok": False, "output": f"Ollama error: {e}"}
 
 
 def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3") -> dict:
-    """Chama o Ollama localmente para sugerir uma mensagem de commit."""
-    diff = git_diff_staged(path)
+    """Suggests a commit message using PandaClient."""
+    diff   = git_diff_staged(path)
     status = git_status(path)
 
-    diff_text = diff.get("output", "").strip()
+    diff_text   = diff.get("output", "").strip()
     status_text = status.get("output", "").strip()
 
-    if not diff_text or diff_text == "(no output)":
-        diff_text = "(sem diff disponível)"
+    if _PANDA_AVAILABLE:
+        _panda.text_model = model
+        return _panda.commit_message(
+            diff=diff_text,
+            status=status_text,
+            extra_context=user_context,
+        )
 
-    context_block = f"\nContexto adicional do desenvolvedor: {user_context}" if user_context.strip() else ""
-
+    # Fallback direto caso PandaClient não esteja disponível
+    context_block = f"\nDeveloper context: {user_context}" if user_context.strip() else ""
     prompt = f"""You are a development assistant. Analyze the diff and status below and generate ONE clear and objective commit message in English, following the conventional commits standard (feat, fix, refactor, docs, chore, etc).
 
 Reply ONLY with the commit message, no explanations, no quotes, no extra prefix.
@@ -251,35 +271,22 @@ Status:
 Diff:
 {diff_text[:3000]}
 """
-
-    payload = json.dumps({
-        "model": model,
-        "prompt": prompt,
-        "stream": False
-    }).encode("utf-8")
-
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
         req = urllib.request.Request(
             "http://127.0.0.1:11434/api/generate",
             data=payload,
             headers={"Content-Type": "application/json"},
-            method="POST"
+            method="POST",
         )
         with urllib.request.urlopen(req, timeout=None) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             message = result.get("response", "").strip()
             if not message:
-                return {"ok": False, "output": "Ollama retornou resposta vazia."}
+                return {"ok": False, "output": "Ollama returned empty response."}
             return {"ok": True, "output": message}
-    except urllib.error.HTTPError as e:
-        body = ""
-        try:
-            body = e.read().decode("utf-8")
-        except Exception:
-            pass
-        return {"ok": False, "output": f"Ollama HTTP {e.code}: {e.reason}. Detalhe: {body or '(sem detalhe)'}"}
     except Exception as e:
-        return {"ok": False, "output": f"Erro ao chamar Ollama: {e}"}
+        return {"ok": False, "output": f"Ollama error: {e}"}
 
 
 def git_push(path: str, remote: str = "origin", branch: str = "") -> dict:
@@ -308,10 +315,6 @@ def open_vscode(path: str) -> dict:
         return {"ok": False, "output": str(e)}
 
 
-
-    return run_git(path, ["init"])
-
-
 def detect_project_from_path(path: str) -> dict:
     """Detecta informações do projeto a partir de uma pasta com .git."""
     root = Path(path)
@@ -322,13 +325,11 @@ def detect_project_from_path(path: str) -> dict:
 
     name = root.name
 
-    # Tenta pegar o remote origin
     remote = run_git(path, ["remote", "get-url", "origin"])
     git_remote = remote["output"] if remote["ok"] else ""
 
-    # Tenta pegar a stack detectando arquivos conhecidos
     stack_hints = {
-        "package.json":      "javascript",
+        "package.json":     "javascript",
         "requirements.txt": "python",
         "pyproject.toml":   "python",
         "Cargo.toml":       "rust",
@@ -345,7 +346,6 @@ def detect_project_from_path(path: str) -> dict:
         elif (root / fname).exists():
             stack.append(lang)
 
-    # Tenta detectar tipo
     project_type = "other"
     if any(root.glob("**/*.sol")):
         project_type = "contract"
@@ -361,12 +361,12 @@ def detect_project_from_path(path: str) -> dict:
         project_type = "tool"
 
     return {
-        "ok": True,
-        "name": name,
-        "path": str(root),
+        "ok":         True,
+        "name":       name,
+        "path":       str(root),
         "git_remote": git_remote.strip(),
-        "stack": stack,
-        "type": project_type,
+        "stack":      stack,
+        "type":       project_type,
     }
 
 
@@ -412,7 +412,6 @@ def remove_project(name: str) -> dict:
 class GitHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
-        # Suprime logs verbosos do servidor
         pass
 
     def send_json(self, data: dict, status: int = 200):
@@ -456,15 +455,12 @@ class GitHandler(BaseHTTPRequestHandler):
         path   = parsed.path
         params = parse_qs(parsed.query)
 
-        # ── Arquivos estáticos ──────────────────
         if path == "/" or path == "/index.html":
             self.serve_file(STATIC_DIR / "index.html")
             return
 
-        # ── API ─────────────────────────────────
         if path == "/api/projects":
-            projects = load_projects()
-            self.send_json(projects)
+            self.send_json(load_projects())
             return
 
         if path == "/api/status":
@@ -473,8 +469,7 @@ class GitHandler(BaseHTTPRequestHandler):
             if name not in projects:
                 self.send_json({"ok": False, "output": "Projeto não encontrado"}, 404)
                 return
-            proj_path = projects[name]["path"]
-            self.send_json(git_status(proj_path))
+            self.send_json(git_status(projects[name]["path"]))
             return
 
         if path == "/api/diff":
@@ -551,9 +546,7 @@ class GitHandler(BaseHTTPRequestHandler):
             if not proj_path:
                 self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
                 return
-            remote = body.get("remote", "origin")
-            branch = body.get("branch", "")
-            self.send_json(git_push(proj_path, remote, branch))
+            self.send_json(git_push(proj_path, body.get("remote", "origin"), body.get("branch", "")))
             return
 
         if path == "/api/pull":
@@ -612,7 +605,6 @@ class GitHandler(BaseHTTPRequestHandler):
             if name in projects:
                 self.send_json({"ok": False, "output": f"Projeto '{name}' já existe"})
                 return
-
             proj_path = body.get("path", "").strip()
             if not proj_path:
                 self.send_json({"ok": False, "output": "Caminho vazio"})
@@ -620,9 +612,8 @@ class GitHandler(BaseHTTPRequestHandler):
             if not Path(proj_path).exists():
                 self.send_json({"ok": False, "output": f"Pasta não encontrada: {proj_path}"})
                 return
-
             cfg = {
-                "path": proj_path,
+                "path":        proj_path,
                 "description": body.get("description", ""),
                 "objective":   body.get("objective", ""),
                 "status":      body.get("status", "em desenvolvimento"),
@@ -631,14 +622,10 @@ class GitHandler(BaseHTTPRequestHandler):
                 "git_remote":  body.get("git_remote", ""),
                 "require_confirmation": ["git push", "git reset", "git rebase"],
             }
-
             result = save_project(name, cfg)
-
-            # git init opcional
             if result["ok"] and body.get("init_git"):
                 init_result = git_init(proj_path)
                 result["output"] += f"\n{init_result['output']}"
-
             self.send_json(result)
             return
 
@@ -647,8 +634,6 @@ class GitHandler(BaseHTTPRequestHandler):
             if not name or name not in projects:
                 self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
                 return
-
-            # Preserva campos que não são editáveis pelo modal
             existing = projects[name]
             cfg = {
                 "path":        body.get("path", existing.get("path", "")).strip(),
@@ -660,7 +645,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 "git_remote":  body.get("git_remote", existing.get("git_remote", "")),
                 "require_confirmation": existing.get("require_confirmation", ["git push", "git reset", "git rebase"]),
             }
-
             self.send_json(save_project(name, cfg))
             return
 
@@ -707,9 +691,11 @@ class GitHandler(BaseHTTPRequestHandler):
             if not proj_path:
                 self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
                 return
-            user_context = body.get("context", "").strip()
-            model = body.get("model", "phi3")
-            self.send_json(suggest_commit_message(proj_path, user_context, model))
+            self.send_json(suggest_commit_message(
+                proj_path,
+                user_context=body.get("context", "").strip(),
+                model=body.get("model", "phi3"),
+            ))
             return
 
         self.send_json({"ok": False, "output": "Rota não encontrada"}, 404)
@@ -722,6 +708,7 @@ def main():
     STATIC_DIR.mkdir(exist_ok=True)
     print(f"🐼 Git Manager")
     print(f"   http://localhost:{PORT}")
+    print(f"   PandaClient: {'✅ loaded' if _PANDA_AVAILABLE else '⚠️  not found (fallback mode)'}")
     print(f"   Ctrl+C para encerrar\n")
 
     projects = load_projects()
