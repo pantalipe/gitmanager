@@ -92,12 +92,10 @@ def git_branches(path: str) -> dict:
 
 
 def git_init(path: str) -> dict:
-    """Inicializa um repositório git na pasta."""
     return run_git(path, ["init"])
 
 
 def git_new_branch(path: str, branch: str) -> dict:
-    """Cria e faz checkout de uma nova branch."""
     return run_git(path, ["checkout", "-b", branch])
 
 
@@ -107,7 +105,6 @@ def git_commit(path: str, message: str) -> dict:
 
 
 def git_diff_staged(path: str) -> dict:
-    """Retorna o diff staged (git add já feito) ou unstaged se não houver staged."""
     staged = run_git(path, ["diff", "--cached"])
     if staged["ok"] and staged["output"] and staged["output"] != "(no output)":
         return staged
@@ -115,17 +112,13 @@ def git_diff_staged(path: str) -> dict:
 
 
 def get_ollama_models() -> dict:
-    """Returns installed Ollama models via PandaClient."""
     if _PANDA_AVAILABLE:
         models = _panda.available_models()
         if models:
             return {"ok": True, "models": models}
         return {"ok": False, "models": [], "output": "Ollama unavailable or no models installed."}
-    # Fallback direto caso PandaClient não esteja disponível
     try:
-        req = urllib.request.Request(
-            "http://127.0.0.1:11434/api/tags", method="GET"
-        )
+        req = urllib.request.Request("http://127.0.0.1:11434/api/tags", method="GET")
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             return {"ok": True, "models": [m["name"] for m in result.get("models", [])]}
@@ -133,11 +126,88 @@ def get_ollama_models() -> dict:
         return {"ok": False, "models": [], "output": f"Ollama unavailable: {e}"}
 
 
+def ecosystem_status() -> dict:
+    """
+    Returns git health for every project in projects.json.
+    For each project:
+      - path_exists   : bool
+      - branch        : current branch name
+      - changed_files : number of uncommitted changes
+      - last_commit   : relative time of last commit (e.g. "2 hours ago")
+      - last_message  : last commit message
+      - ahead         : commits ahead of remote (None if unknown)
+      - health        : "clean" | "dirty" | "no_path" | "no_git"
+    """
+    projects = load_projects()
+    result = {}
+
+    for name, cfg in projects.items():
+        path = cfg.get("path", "")
+        entry = {
+            "name":         name,
+            "description":  cfg.get("description", ""),
+            "type":         cfg.get("type", "other"),
+            "stack":        cfg.get("stack", []),
+            "path_exists":  False,
+            "branch":       None,
+            "changed_files": 0,
+            "last_commit":  None,
+            "last_message": None,
+            "ahead":        None,
+            "health":       "no_path",
+        }
+
+        if not path or not Path(path).exists():
+            result[name] = entry
+            continue
+
+        entry["path_exists"] = True
+
+        # Check if git repo
+        if not (Path(path) / ".git").exists():
+            entry["health"] = "no_git"
+            result[name] = entry
+            continue
+
+        # Branch + ahead/behind
+        status_r = run_git(path, ["status", "--short", "--branch"])
+        if status_r["ok"]:
+            lines = status_r["output"].split("\n")
+            branch_line = lines[0] if lines else ""
+            # Parse ## main...origin/main [ahead 2]
+            import re
+            branch_match = re.match(r"## ([^.]+)", branch_line)
+            if branch_match:
+                entry["branch"] = branch_match.group(1).strip()
+            ahead_match = re.search(r"\[ahead (\d+)\]", branch_line)
+            if ahead_match:
+                entry["ahead"] = int(ahead_match.group(1))
+
+            # Count changed files (lines that are not the branch line)
+            changed = [l for l in lines[1:] if l.strip()]
+            entry["changed_files"] = len(changed)
+
+        # Last commit time (relative)
+        log_r = run_git(path, ["log", "-1", "--format=%cr|||%s"])
+        if log_r["ok"] and log_r["output"] and log_r["output"] != "(no output)":
+            parts = log_r["output"].split("|||", 1)
+            entry["last_commit"]  = parts[0].strip() if len(parts) > 0 else None
+            entry["last_message"] = parts[1].strip() if len(parts) > 1 else None
+
+        # Health
+        if entry["changed_files"] > 0:
+            entry["health"] = "dirty"
+        else:
+            entry["health"] = "clean"
+
+        result[name] = entry
+
+    return {"ok": True, "projects": result}
+
+
 def scan_project_structure(path: str) -> str:
-    """Escaneia a estrutura do projeto para contextualizar o LLM."""
     root = Path(path)
     ignore = {'.git', 'node_modules', '__pycache__', '.next', 'dist', 'build', '.env', 'venv', '.venv'}
-
     lines = []
     for item in sorted(root.rglob('*')):
         if any(p in item.parts for p in ignore):
@@ -151,8 +221,6 @@ def scan_project_structure(path: str) -> str:
             lines.append(f"{prefix}[{rel.name}/]")
         else:
             lines.append(f"{prefix}{rel.name}")
-
-    # Lê arquivos de contexto se existirem
     extras = []
     for fname in ['package.json', 'requirements.txt', 'pyproject.toml', 'Cargo.toml']:
         fpath = root / fname
@@ -162,12 +230,10 @@ def scan_project_structure(path: str) -> str:
                 extras.append(f"\n--- {fname} ---\n{content}")
             except Exception:
                 pass
-
     return '\n'.join(lines) + ''.join(extras)
 
 
 def get_existing_readme(path: str) -> str:
-    """Retorna o conteúdo do README.md existente ou string vazia."""
     readme = Path(path) / 'README.md'
     if readme.exists():
         try:
@@ -178,7 +244,6 @@ def get_existing_readme(path: str) -> str:
 
 
 def save_readme(path: str, content: str) -> dict:
-    """Salva o README.md no projeto."""
     try:
         readme = Path(path) / 'README.md'
         readme.write_text(content, encoding='utf-8')
@@ -188,9 +253,7 @@ def save_readme(path: str, content: str) -> dict:
 
 
 def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
-    """Generates a README.md using PandaClient."""
     structure = scan_project_structure(path)
-
     if _PANDA_AVAILABLE:
         _panda.text_model = model
         return _panda.generate_readme(
@@ -201,37 +264,16 @@ def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
             status=project_cfg.get("status", ""),
             file_structure=structure,
         )
-
-    # Fallback direto caso PandaClient não esteja disponível
     name        = project_cfg.get("name", Path(path).name)
     description = project_cfg.get("description", "")
     objective   = project_cfg.get("objective", "")
     stack       = ", ".join(project_cfg.get("stack", []))
     status      = project_cfg.get("status", "")
-
-    prompt = f"""You are a technical writer. Generate a clean and professional README.md in English for the project below.
-
-Use markdown. Include: project name, short description, what it does, main features, stack, how to run (if inferable), and project structure.
-Do NOT include license section. Keep it concise and developer-focused.
-Reply ONLY with the raw markdown content, no explanations, no code fences around the whole file.
-
-Project name: {name}
-Description: {description}
-Objective: {objective}
-Stack: {stack}
-Status: {status}
-
-File structure:
-{structure}
-"""
+    prompt = f"""You are a technical writer. Generate a clean and professional README.md in English for the project below.\n\nProject name: {name}\nDescription: {description}\nObjective: {objective}\nStack: {stack}\nStatus: {status}\n\nFile structure:\n{structure}"""
     payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
-        req = urllib.request.Request(
-            "http://127.0.0.1:11434/api/generate",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
+        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
+                                     headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=None) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             content = result.get("response", "").strip()
@@ -243,42 +285,19 @@ File structure:
 
 
 def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3") -> dict:
-    """Suggests a commit message using PandaClient."""
     diff   = git_diff_staged(path)
     status = git_status(path)
-
     diff_text   = diff.get("output", "").strip()
     status_text = status.get("output", "").strip()
-
     if _PANDA_AVAILABLE:
         _panda.text_model = model
-        return _panda.commit_message(
-            diff=diff_text,
-            status=status_text,
-            extra_context=user_context,
-        )
-
-    # Fallback direto caso PandaClient não esteja disponível
+        return _panda.commit_message(diff=diff_text, status=status_text, extra_context=user_context)
     context_block = f"\nDeveloper context: {user_context}" if user_context.strip() else ""
-    prompt = f"""You are a development assistant. Analyze the diff and status below and generate ONE clear and objective commit message in English, following the conventional commits standard (feat, fix, refactor, docs, chore, etc).
-
-Reply ONLY with the commit message, no explanations, no quotes, no extra prefix.
-{context_block}
-
-Status:
-{status_text}
-
-Diff:
-{diff_text[:3000]}
-"""
+    prompt = f"""You are a development assistant. Generate ONE conventional commit message in English.\nReply ONLY with the commit message.\n{context_block}\nStatus:\n{status_text}\nDiff:\n{diff_text[:3000]}"""
     payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
-        req = urllib.request.Request(
-            "http://127.0.0.1:11434/api/generate",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
+        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
+                                     headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=None) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             message = result.get("response", "").strip()
@@ -305,7 +324,6 @@ def git_checkout(path: str, branch: str) -> dict:
 
 
 def open_vscode(path: str) -> dict:
-    """Abre a pasta no VS Code."""
     if not Path(path).exists():
         return {"ok": False, "output": f"Pasta não encontrada: {path}"}
     try:
@@ -316,36 +334,26 @@ def open_vscode(path: str) -> dict:
 
 
 def detect_project_from_path(path: str) -> dict:
-    """Detecta informações do projeto a partir de uma pasta com .git."""
     root = Path(path)
     if not root.exists():
         return {"ok": False, "output": f"Pasta não encontrada: {path}"}
     if not (root / ".git").exists():
         return {"ok": False, "output": "Nenhum repositório .git encontrado nesta pasta."}
-
     name = root.name
-
     remote = run_git(path, ["remote", "get-url", "origin"])
     git_remote = remote["output"] if remote["ok"] else ""
-
     stack_hints = {
-        "package.json":     "javascript",
-        "requirements.txt": "python",
-        "pyproject.toml":   "python",
-        "Cargo.toml":       "rust",
-        "go.mod":           "go",
-        "pom.xml":          "java",
-        "*.sol":            "solidity",
+        "package.json": "javascript", "requirements.txt": "python",
+        "pyproject.toml": "python", "Cargo.toml": "rust",
+        "go.mod": "go", "pom.xml": "java", "*.sol": "solidity",
     }
     stack = []
     for fname, lang in stack_hints.items():
         if fname.startswith("*"):
-            ext = fname[1:]
-            if any(root.glob(f"**/*{ext}")):
+            if any(root.glob(f"**/*{fname[1:]}")):
                 stack.append(lang)
         elif (root / fname).exists():
             stack.append(lang)
-
     project_type = "other"
     if any(root.glob("**/*.sol")):
         project_type = "contract"
@@ -359,38 +367,26 @@ def detect_project_from_path(path: str) -> dict:
             pass
     elif any(root.glob("**/*.py")):
         project_type = "tool"
-
-    return {
-        "ok":         True,
-        "name":       name,
-        "path":       str(root),
-        "git_remote": git_remote.strip(),
-        "stack":      stack,
-        "type":       project_type,
-    }
+    return {"ok": True, "name": name, "path": str(root),
+            "git_remote": git_remote.strip(), "stack": stack, "type": project_type}
 
 
 def save_project(name: str, cfg: dict) -> dict:
-    """Adiciona ou atualiza um projeto no projects.json."""
     try:
         if PROJECTS_FILE.exists():
             with open(PROJECTS_FILE, encoding="utf-8") as f:
                 data = json.load(f)
         else:
             data = {"projects": {}, "settings": {}}
-
         data["projects"][name] = cfg
-
         with open(PROJECTS_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-
         return {"ok": True, "output": f"Projeto '{name}' salvo com sucesso."}
     except Exception as e:
         return {"ok": False, "output": str(e)}
 
 
 def remove_project(name: str) -> dict:
-    """Remove um projeto do projects.json sem deletar a pasta."""
     try:
         if not PROJECTS_FILE.exists():
             return {"ok": False, "output": "projects.json não encontrado"}
@@ -461,6 +457,10 @@ class GitHandler(BaseHTTPRequestHandler):
 
         if path == "/api/projects":
             self.send_json(load_projects())
+            return
+
+        if path == "/api/ecosystem_status":
+            self.send_json(ecosystem_status())
             return
 
         if path == "/api/status":

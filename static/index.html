@@ -52,10 +52,29 @@ header {
   color: var(--green);
   letter-spacing: 1px;
 }
-
 .logo span { color: var(--muted); font-weight: 300; }
 
 .header-sep { flex: 1; }
+
+.header-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.nav-btn:hover { color: var(--text); background: var(--surface2); border-color: var(--border2); }
+.nav-btn.active { color: var(--green); border-color: var(--green); background: rgba(66,211,146,0.07); }
 
 .server-status {
   font-family: 'IBM Plex Mono', monospace;
@@ -64,6 +83,7 @@ header {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-left: 8px;
 }
 
 .dot {
@@ -97,6 +117,8 @@ header {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
 }
 
 .project-list {
@@ -104,7 +126,6 @@ header {
   overflow-y: auto;
   padding: 6px 0;
 }
-
 .project-list::-webkit-scrollbar { width: 3px; }
 .project-list::-webkit-scrollbar-thumb { background: var(--border2); }
 
@@ -127,9 +148,7 @@ header {
   border-left: 2px solid transparent;
   font-size: 13px;
 }
-
 .project-item:hover { background: var(--surface2); }
-
 .project-item.active {
   background: rgba(66,211,146,0.07);
   border-left-color: var(--green);
@@ -137,7 +156,6 @@ header {
 }
 
 .project-icon { font-size: 12px; opacity: 0.7; }
-
 .project-name { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
 .project-dot {
@@ -146,18 +164,15 @@ header {
   margin-left: auto;
   flex-shrink: 0;
 }
-
 .project-dot.ok     { background: var(--green); }
 .project-dot.dirty  { background: var(--yellow); }
 .project-dot.nopath { background: var(--muted); }
 
-/* ── SIDEBAR SEARCH ── */
 .sidebar-search {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-
 .sidebar-search input {
   width: 100%;
   background: var(--surface2);
@@ -170,7 +185,6 @@ header {
   outline: none;
   transition: border-color 0.15s;
 }
-
 .sidebar-search input:focus { border-color: var(--green); }
 .sidebar-search input::placeholder { color: var(--muted); }
 
@@ -200,18 +214,8 @@ header {
   margin-bottom: 4px;
 }
 
-.project-meta {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.project-path {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--blue);
-  opacity: 0.7;
-}
+.project-meta { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.project-path { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--blue); opacity: 0.7; }
 
 .action-bar {
   display: flex;
@@ -235,11 +239,9 @@ header {
   align-items: center;
   gap: 6px;
 }
-
 .btn:hover { border-color: var(--green); color: var(--green); background: rgba(66,211,146,0.05); }
 .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btn.danger:hover  { border-color: var(--red); color: var(--red); background: rgba(255,95,87,0.05); }
+.btn.danger:hover  { border-color: var(--red);    color: var(--red);    background: rgba(255,95,87,0.05); }
 .btn.warning:hover { border-color: var(--yellow); color: var(--yellow); background: rgba(255,189,46,0.05); }
 .btn.primary { border-color: var(--green); color: var(--green); }
 
@@ -293,25 +295,19 @@ header {
   white-space: pre-wrap;
   word-break: break-all;
 }
-
 .panel-body::-webkit-scrollbar { width: 3px; }
 .panel-body::-webkit-scrollbar-thumb { background: var(--border2); }
 
-/* diff colors */
 .diff-add  { color: var(--green); }
 .diff-del  { color: var(--red); }
 .diff-hdr  { color: var(--blue); opacity: 0.8; }
 .diff-meta { color: var(--muted); }
-
-/* log colors */
-.log-hash   { color: var(--yellow); }
-.log-msg    { color: var(--text); }
-
-/* status */
-.status-M { color: var(--yellow); }
-.status-A { color: var(--green); }
-.status-D { color: var(--red); }
-.status-? { color: var(--muted); }
+.log-hash  { color: var(--yellow); }
+.log-msg   { color: var(--text); }
+.status-M  { color: var(--yellow); }
+.status-A  { color: var(--green); }
+.status-D  { color: var(--red); }
+.status-\? { color: var(--muted); }
 .status-branch { color: var(--blue); font-weight: 600; }
 
 /* ── COMMIT AREA ── */
@@ -337,9 +333,260 @@ header {
   outline: none;
   transition: border-color 0.15s;
 }
-
 .commit-input:focus { border-color: var(--green); }
 .commit-input::placeholder { color: var(--muted); }
+
+/* ── ECOSYSTEM VIEW ── */
+#ecosystemView {
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.eco-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.eco-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.eco-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.eco-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.eco-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.eco-stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.eco-stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.eco-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.eco-body::-webkit-scrollbar { width: 4px; }
+.eco-body::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.eco-layer-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eco-layer-label:first-child { margin-top: 0; }
+.eco-layer-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.eco-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+/* ── ECOSYSTEM CARD ── */
+.eco-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.eco-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 8px 0 0 8px;
+}
+
+.eco-card.health-clean::before  { background: var(--green); }
+.eco-card.health-dirty::before  { background: var(--yellow); }
+.eco-card.health-no_git::before { background: var(--muted); }
+.eco-card.health-no_path::before{ background: var(--red); }
+
+.eco-card:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.eco-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.eco-card-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eco-semaphore {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.semaphore-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.semaphore-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.health-clean  .semaphore-dot { background: var(--green);  box-shadow: 0 0 6px rgba(66,211,146,0.5); }
+.health-dirty  .semaphore-dot { background: var(--yellow); box-shadow: 0 0 6px rgba(255,189,46,0.5); }
+.health-no_git .semaphore-dot { background: var(--muted); }
+.health-no_path .semaphore-dot { background: var(--red); box-shadow: 0 0 6px rgba(255,95,87,0.4); }
+
+.health-clean  .semaphore-label { color: var(--green); }
+.health-dirty  .semaphore-label { color: var(--yellow); }
+.health-no_git .semaphore-label { color: var(--muted); }
+.health-no_path .semaphore-label { color: var(--red); }
+
+.eco-card-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eco-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.eco-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+
+.eco-tag.branch { color: var(--blue); border-color: rgba(77,166,255,0.3); background: rgba(77,166,255,0.05); }
+.eco-tag.dirty  { color: var(--yellow); border-color: rgba(255,189,46,0.3); background: rgba(255,189,46,0.05); }
+.eco-tag.ahead  { color: var(--orange); border-color: rgba(255,159,67,0.3); background: rgba(255,159,67,0.05); }
+
+.eco-card-commit {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.eco-card-commit .commit-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.eco-card-commit .commit-msg {
+  color: var(--text);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.eco-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  gap: 10px;
+}
+
+.eco-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── MODAL ── */
 .modal-overlay {
@@ -351,7 +598,6 @@ header {
   align-items: center;
   justify-content: center;
 }
-
 .modal-overlay.show { display: flex; }
 
 .modal {
@@ -373,12 +619,7 @@ header {
   gap: 8px;
 }
 
-.modal p {
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 8px;
-  line-height: 1.6;
-}
+.modal p { color: var(--muted); font-size: 13px; margin-bottom: 8px; line-height: 1.6; }
 
 .modal-cmd {
   background: var(--surface2);
@@ -393,7 +634,17 @@ header {
 
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* ── OUTPUT TOAST ── */
+.model-selector {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ── TOAST ── */
 .toast {
   position: fixed;
   bottom: 20px;
@@ -411,7 +662,6 @@ header {
   transition: all 0.3s;
   border-left: 3px solid var(--green);
 }
-
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.error { border-left-color: var(--red); }
 
@@ -426,38 +676,19 @@ header {
   font-family: 'IBM Plex Mono', monospace;
   gap: 8px;
 }
-
 .empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.4; }
 
-.model-selector {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  outline: none;
-  cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace;
-}
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  padding: 16px;
-.loading {
-  color: var(--muted);
-  content: '';
-  animation: dots 1.2s infinite;
-}
-
-@keyframes dots {
-  0%   { content: '.'; }
-  33%  { content: '..'; }
-  66%  { content: '...'; }
-}
+.loading { color: var(--muted); }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">🐼 git<span>/</span>manager</div>
+  <div class="header-nav">
+    <button class="nav-btn active" id="navProjects" onclick="switchView('projects')">Projects</button>
+    <button class="nav-btn" id="navEcosystem" onclick="switchView('ecosystem')">⬡ Ecosystem</button>
+  </div>
   <div class="header-sep"></div>
   <div class="server-status">
     <div class="dot"></div>
@@ -474,12 +705,7 @@ header {
       <button class="btn" onclick="openNewProjectModal()" style="padding:2px 8px;font-size:10px;margin-left:auto">＋</button>
     </div>
     <div class="sidebar-search">
-      <input
-        type="text"
-        id="sidebarSearch"
-        placeholder="🔍 search project..."
-        oninput="filterProjects(this.value)"
-      />
+      <input type="text" id="sidebarSearch" placeholder="🔍 search project..." oninput="filterProjects(this.value)" />
     </div>
     <div class="project-list" id="projectList">
       <div class="loading">loading</div>
@@ -490,7 +716,22 @@ header {
   <div class="main" id="mainArea">
     <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">
       <span style="font-size:40px;opacity:0.3">🐼</span>
-      <span style="font-size:12px">Select a project</span>
+      <span style="font-size:12px">Select a project or open Ecosystem view</span>
+    </div>
+  </div>
+
+  <!-- ECOSYSTEM VIEW (parallel to main, hidden by default) -->
+  <div id="ecosystemView">
+    <div class="eco-header">
+      <div>
+        <div class="eco-title">⬡ Ecosystem Status</div>
+        <div class="eco-meta" id="ecoMeta">Loading...</div>
+      </div>
+      <div class="eco-stats" id="ecoStats"></div>
+      <button class="btn primary" onclick="loadEcosystem()" style="flex-shrink:0">↻ Refresh</button>
+    </div>
+    <div class="eco-body" id="ecoBody">
+      <div class="eco-loading"><div class="eco-spinner"></div> Loading ecosystem...</div>
     </div>
   </div>
 
@@ -500,8 +741,7 @@ header {
 <div class="modal-overlay" id="readmeModal">
   <div class="modal" style="width:860px;max-width:95vw">
     <h3>📄 README generated by Ollama</h3>
-    <p style="margin-bottom:12px">Review and edit before saving. The <code style="font-size:11px">README.md</code> file will be overwritten in the project folder.</p>
-
+    <p style="margin-bottom:12px">Review and edit before saving. The <code style="font-size:11px">README.md</code> file will be overwritten.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Current <span id="readmeExistingLabel" style="color:var(--green)"></span></div>
@@ -509,12 +749,10 @@ header {
       </div>
       <div>
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Generated by LLM <span style="color:var(--blue);font-size:9px">— editable</span></div>
-        <textarea id="readmeGenerated" style="width:100%;height:340px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:10px;resize:none;outline:none;transition:border-color 0.15s" placeholder="" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'" ></textarea>
+        <textarea id="readmeGenerated" style="width:100%;height:340px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:10px;resize:none;outline:none;transition:border-color 0.15s" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
       </div>
     </div>
-
     <div id="readme_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
-
     <div class="modal-actions">
       <button class="btn" onclick="closeReadmeModal()">Cancel</button>
       <button class="btn primary" onclick="doSaveReadme()">Save README.md</button>
@@ -540,9 +778,7 @@ header {
 <div class="modal-overlay" id="editProjectModal">
   <div class="modal" style="width:500px">
     <h3>✎ Edit Project</h3>
-
     <div style="display:grid;gap:10px;margin-bottom:20px">
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Type</div>
@@ -566,25 +802,21 @@ header {
           </select>
         </div>
       </div>
-
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Folder path</div>
         <input id="ep_path" class="commit-input" style="width:100%"/>
       </div>
-
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Description</div>
         <input id="ep_desc" class="commit-input" style="width:100%"/>
       </div>
-
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Objective</div>
         <input id="ep_obj" class="commit-input" style="width:100%"/>
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack <span style="color:var(--muted);font-size:9px">(comma-separated)</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack</div>
           <input id="ep_stack" class="commit-input" style="width:100%"/>
         </div>
         <div>
@@ -592,11 +824,8 @@ header {
           <input id="ep_remote" class="commit-input" style="width:100%"/>
         </div>
       </div>
-
     </div>
-
     <div id="ep_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
-
     <div class="modal-actions">
       <button class="btn" onclick="closeEditModal()">Cancel</button>
       <button class="btn primary" onclick="submitEditProject()">Save Changes</button>
@@ -608,9 +837,7 @@ header {
 <div class="modal-overlay" id="newProjectModal">
   <div class="modal" style="width:500px">
     <h3>＋ New Project</h3>
-
     <div style="display:grid;gap:10px;margin-bottom:20px">
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Name *</div>
@@ -628,7 +855,6 @@ header {
           </select>
         </div>
       </div>
-
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Folder path *</div>
         <div style="display:flex;gap:8px">
@@ -636,20 +862,17 @@ header {
           <button class="btn" id="detectBtn" onclick="doDetectProject()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Detect info from .git">&#128270; Load</button>
         </div>
       </div>
-
       <div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Description</div>
         <input id="np_desc" placeholder="What is this project?" class="commit-input" style="width:100%"/>
       </div>
-
       <div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Objective <span style="color:var(--muted);font-size:9px">(for the LLM context)</span></div>
-        <input id="np_obj" placeholder="What does it solve? What is its purpose?" class="commit-input" style="width:100%"/>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Objective</div>
+        <input id="np_obj" placeholder="What does it solve?" class="commit-input" style="width:100%"/>
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack <span style="color:var(--muted);font-size:9px">(comma-separated)</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Stack</div>
           <input id="np_stack" placeholder="python, bitcoin" class="commit-input" style="width:100%"/>
         </div>
         <div>
@@ -663,21 +886,16 @@ header {
           </select>
         </div>
       </div>
-
       <div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Git Remote <span style="color:var(--muted);font-size:9px">(optional)</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Git Remote</div>
         <input id="np_remote" placeholder="git@github.com:panta/repo.git" class="commit-input" style="width:100%"/>
       </div>
-
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--muted)">
         <input type="checkbox" id="np_init" style="accent-color:var(--green)"/>
         Initialize git repository (<code style="font-size:11px">git init</code>)
       </label>
-
     </div>
-
     <div id="np_error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"></div>
-
     <div class="modal-actions">
       <button class="btn" onclick="closeNewProjectModal()">Cancel</button>
       <button class="btn primary" onclick="submitNewProject()">Add Project</button>
@@ -694,6 +912,7 @@ header {
 // ─────────────────────────────────────────────
 let projects = {};
 let currentProject = null;
+let currentView = 'projects'; // 'projects' | 'ecosystem'
 const API = 'http://localhost:8765';
 
 const TYPE_ICONS = {
@@ -713,6 +932,13 @@ const TYPE_LABELS = {
   sandbox:    'Sandbox',
 };
 
+// Ecosystem layers — maps project names to layers
+const ECOSYSTEM_LAYERS = {
+  'Dev Tooling':       ['gitmanager', 'pandagent', 'ollama-bench'],
+  'Content Pipeline':  ['rotman', 'conduler'],
+  'Web3 Product':      ['pandapoints', 'pandapoints-dapp', 'pp-testenv'],
+};
+
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
@@ -725,6 +951,200 @@ async function init() {
     document.getElementById('projectList').innerHTML =
       '<div style="padding:16px;color:var(--red);font-family:monospace;font-size:12px">Server offline.<br>Run: python server.py</div>';
   }
+}
+
+// ─────────────────────────────────────────────
+// VIEW SWITCHING
+// ─────────────────────────────────────────────
+function switchView(view) {
+  currentView = view;
+
+  const mainArea = document.getElementById('mainArea');
+  const ecoView  = document.getElementById('ecosystemView');
+  const navProjects  = document.getElementById('navProjects');
+  const navEcosystem = document.getElementById('navEcosystem');
+
+  if (view === 'ecosystem') {
+    mainArea.style.display = 'none';
+    ecoView.style.display  = 'flex';
+    navProjects.classList.remove('active');
+    navEcosystem.classList.add('active');
+    loadEcosystem();
+  } else {
+    mainArea.style.display = '';
+    ecoView.style.display  = 'none';
+    navEcosystem.classList.remove('active');
+    navProjects.classList.add('active');
+  }
+}
+
+// ─────────────────────────────────────────────
+// ECOSYSTEM VIEW
+// ─────────────────────────────────────────────
+async function loadEcosystem() {
+  const body  = document.getElementById('ecoBody');
+  const meta  = document.getElementById('ecoMeta');
+  const stats = document.getElementById('ecoStats');
+
+  body.innerHTML = '<div class="eco-loading"><div class="eco-spinner"></div> Scanning all projects...</div>';
+  meta.textContent = 'Loading...';
+  stats.innerHTML = '';
+
+  const data = await api('/api/ecosystem_status');
+  if (!data.ok) {
+    body.innerHTML = `<div class="eco-loading" style="color:var(--red)">Error: ${esc(data.output || 'unknown')}</div>`;
+    return;
+  }
+
+  const all = Object.values(data.projects);
+  const nClean   = all.filter(p => p.health === 'clean').length;
+  const nDirty   = all.filter(p => p.health === 'dirty').length;
+  const nNoPath  = all.filter(p => p.health === 'no_path').length;
+  const nNoGit   = all.filter(p => p.health === 'no_git').length;
+  const total    = all.length;
+
+  // Update meta
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  meta.textContent = `${total} projects · last refreshed at ${now}`;
+
+  // Update stats bar
+  stats.innerHTML = `
+    <div class="eco-stat">
+      <div class="eco-stat-value" style="color:var(--green)">${nClean}</div>
+      <div class="eco-stat-label">Clean</div>
+    </div>
+    <div class="eco-stat">
+      <div class="eco-stat-value" style="color:var(--yellow)">${nDirty}</div>
+      <div class="eco-stat-label">Dirty</div>
+    </div>
+    <div class="eco-stat">
+      <div class="eco-stat-value" style="color:var(--muted)">${nNoGit + nNoPath}</div>
+      <div class="eco-stat-label">Issues</div>
+    </div>
+    <div class="eco-stat">
+      <div class="eco-stat-value" style="color:var(--text)">${total}</div>
+      <div class="eco-stat-label">Total</div>
+    </div>
+  `;
+
+  // Build grid — grouped by ecosystem layer
+  let html = '';
+
+  // Build reverse lookup: project name → layer
+  const projectLayer = {};
+  for (const [layer, names] of Object.entries(ECOSYSTEM_LAYERS)) {
+    for (const n of names) projectLayer[n] = layer;
+  }
+
+  // Collect projects by layer, plus "Other" for unassigned
+  const byLayer = {};
+  const assigned = new Set();
+
+  for (const [layer, names] of Object.entries(ECOSYSTEM_LAYERS)) {
+    byLayer[layer] = [];
+    for (const n of names) {
+      if (data.projects[n]) {
+        byLayer[layer].push(data.projects[n]);
+        assigned.add(n);
+      }
+    }
+  }
+
+  // Projects not in any layer
+  const others = Object.values(data.projects).filter(p => !assigned.has(p.name));
+  if (others.length) byLayer['Other'] = others;
+
+  const layerIcons = {
+    'Dev Tooling':      '🔧',
+    'Content Pipeline': '🎬',
+    'Web3 Product':     '⛓️',
+    'Other':            '📦',
+  };
+
+  for (const [layer, projs] of Object.entries(byLayer)) {
+    if (!projs.length) continue;
+    const icon = layerIcons[layer] || '📦';
+    html += `<div class="eco-layer-label">${icon} ${layer}</div>`;
+    html += `<div class="eco-grid">`;
+    for (const p of projs) {
+      html += renderEcoCard(p);
+    }
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
+
+  // Also update sidebar dots
+  for (const p of all) {
+    const dot = document.getElementById(`dot-${p.name}`);
+    if (dot) {
+      if (p.health === 'clean')  dot.className = 'project-dot ok';
+      else if (p.health === 'dirty') dot.className = 'project-dot dirty';
+      else dot.className = 'project-dot nopath';
+    }
+  }
+}
+
+function renderEcoCard(p) {
+  const icon = TYPE_ICONS[p.type] || '📦';
+
+  const healthLabels = {
+    clean:   'Clean',
+    dirty:   'Dirty',
+    no_git:  'No git',
+    no_path: 'Not found',
+  };
+
+  const semLabel = healthLabels[p.health] || p.health;
+
+  // Tags
+  let tags = '';
+  if (p.branch) {
+    tags += `<span class="eco-tag branch">⎇ ${esc(p.branch)}</span>`;
+  }
+  if (p.changed_files > 0) {
+    tags += `<span class="eco-tag dirty">~ ${p.changed_files} changed</span>`;
+  }
+  if (p.ahead && p.ahead > 0) {
+    tags += `<span class="eco-tag ahead">↑ ${p.ahead} ahead</span>`;
+  }
+  if (p.stack && p.stack.length) {
+    tags += p.stack.slice(0, 2).map(s => `<span class="eco-tag">${esc(s)}</span>`).join('');
+  }
+
+  // Last commit row
+  let commitRow = '';
+  if (p.last_commit) {
+    commitRow = `
+      <div class="eco-card-commit">
+        <span class="commit-time">${esc(p.last_commit)}</span>
+        <span class="commit-msg">${esc(p.last_message || '')}</span>
+      </div>`;
+  }
+
+  // Click action: open project in projects view
+  const clickable = p.health !== 'no_path';
+  const onclick   = clickable ? `onclick="openProjectFromEco('${p.name}')"` : '';
+  const cursor    = clickable ? '' : 'cursor:default';
+
+  return `
+    <div class="eco-card health-${p.health}" ${onclick} style="${cursor}" title="${esc(p.description || p.name)}">
+      <div class="eco-card-top">
+        <div class="eco-card-name">${icon} ${esc(p.name)}</div>
+        <div class="eco-semaphore">
+          <div class="semaphore-dot"></div>
+          <span class="semaphore-label">${semLabel}</span>
+        </div>
+      </div>
+      <div class="eco-card-desc">${esc(p.description || '—')}</div>
+      <div class="eco-card-meta">${tags}</div>
+      ${commitRow}
+    </div>`;
+}
+
+function openProjectFromEco(name) {
+  switchView('projects');
+  selectProject(name);
 }
 
 // ─────────────────────────────────────────────
@@ -758,29 +1178,21 @@ function renderSidebar() {
   document.getElementById('projectList').innerHTML = html;
 }
 
-// ─────────────────────────────────────────────
-// SIDEBAR FILTER
-// ─────────────────────────────────────────────
 function filterProjects(query) {
   const q = query.trim().toLowerCase();
-  const items = document.querySelectorAll('#projectList .project-item');
+  const items  = document.querySelectorAll('#projectList .project-item');
   const labels = document.querySelectorAll('#projectList .project-group-label');
-
-  // Mostra/oculta itens
   const visibleByGroup = {};
+
   items.forEach(item => {
-    const name = item.querySelector('.project-name')?.textContent?.toLowerCase() || '';
+    const name    = item.querySelector('.project-name')?.textContent?.toLowerCase() || '';
     const visible = !q || name.includes(q);
     item.style.display = visible ? '' : 'none';
-    // Rastreia quais grupos têm itens visíveis
-    const group = item.dataset.group;
-    if (visible) visibleByGroup[group] = true;
+    if (visible) visibleByGroup[item.dataset.group] = true;
   });
 
-  // Oculta labels de grupos sem itens visíveis
   labels.forEach(label => {
-    const group = label.dataset.group;
-    label.style.display = visibleByGroup[group] ? '' : 'none';
+    label.style.display = visibleByGroup[label.dataset.group] ? '' : 'none';
   });
 }
 
@@ -788,17 +1200,17 @@ function filterProjects(query) {
 // SELECT PROJECT
 // ─────────────────────────────────────────────
 async function selectProject(name) {
+  // Make sure we're in projects view
+  if (currentView !== 'projects') switchView('projects');
+
   currentProject = name;
   const cfg = projects[name];
 
-  // Highlight sidebar
   document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`item-${name}`)?.classList.add('active');
 
-  // Render main area
   const stack = (cfg.stack || []).join(', ');
   const icon  = TYPE_ICONS[cfg.type] || '📦';
-  const confirmList = (cfg.require_confirmation || []).join(', ') || 'git push, git reset';
 
   document.getElementById('mainArea').innerHTML = `
     <div class="project-header">
@@ -813,8 +1225,8 @@ async function selectProject(name) {
         <button class="btn" onclick="loadDiff(false)">~ Diff</button>
         <button class="btn" onclick="loadLog()">📋 Log</button>
         <button class="btn" onclick="loadBranches()">⎇ Branches</button>
-        <button class="btn" onclick="openInVscode()" title="Open project in VS Code">⌨ VS Code</button>
-        <button class="btn" id="readmeBtn" onclick="doGenerateReadme()" style="border-color:var(--blue);color:var(--blue)" title="Generate README via Ollama">📄 README</button>
+        <button class="btn" onclick="openInVscode()" title="Open in VS Code">⌨ VS Code</button>
+        <button class="btn" id="readmeBtn" onclick="doGenerateReadme()" style="border-color:var(--blue);color:var(--blue)">📄 README</button>
         <button class="btn warning" onclick="doPull()">⬇ Pull</button>
         <button class="btn danger" onclick="openPushModal()">⬆ Push</button>
         <button class="btn" onclick="openEditModal()">✎ Edit</button>
@@ -834,29 +1246,22 @@ async function selectProject(name) {
           Diff / Log / Branches
           <button class="btn" style="padding:2px 8px;font-size:10px" onclick="loadDiff(true)">full diff</button>
         </div>
-        <div class="panel-body" id="diffPanel"><span style="color:var(--muted)">Click ~ Diff, 📋 Log or ⍟ Branches</span></div>
+        <div class="panel-body" id="diffPanel"><span style="color:var(--muted)">Click ~ Diff, 📋 Log or ⎇ Branches</span></div>
       </div>
       <div class="commit-area">
         <div style="flex:1;display:grid;gap:6px">
           <div style="display:flex;gap:8px;align-items:center">
-            <input
-              class="commit-input"
-              id="commitMsg"
-              placeholder="Commit message..."
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()"
-              style="flex:1"
-            />
-            <select id="ollamaModel" class="model-selector" style="padding:7px 10px;font-size:12px;border:1px solid var(--border2);flex-shrink:0" title="Ollama model">
+            <input class="commit-input" id="commitMsg" placeholder="Commit message..."
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey) doCommit()" style="flex:1"/>
+            <select id="ollamaModel" class="model-selector" style="padding:7px 10px;font-size:12px;border:1px solid var(--border2);flex-shrink:0">
               <option value="">loading...</option>
             </select>
-            <button class="btn" id="suggestBtn" onclick="doSuggestCommit()" style="flex-shrink:0;border-color:var(--blue);color:var(--blue)" title="Suggest message via Ollama">✨ Suggest</button>
+            <button class="btn" id="suggestBtn" onclick="doSuggestCommit()"
+              style="flex-shrink:0;border-color:var(--blue);color:var(--blue)">✨ Suggest</button>
           </div>
-          <input
-            class="commit-input"
-            id="commitContext"
-            placeholder="Optional context — what did you change? (helps the LLM generate a better message)"
-            style="width:100%;font-size:11px;opacity:0.7"
-          />
+          <input class="commit-input" id="commitContext"
+            placeholder="Optional context — what did you change? (helps the LLM)"
+            style="width:100%;font-size:11px;opacity:0.7"/>
         </div>
         <button class="btn primary" onclick="doCommit()" style="align-self:flex-start">✓ Commit</button>
       </div>
@@ -877,39 +1282,30 @@ async function loadStatus() {
 
   let html = '';
   for (const line of lines) {
-    if (line.startsWith('##')) {
-      html += `<div class="status-branch">${esc(line)}</div>`;
-    } else if (line.startsWith(' M') || line.startsWith('M ')) {
-      html += `<div class="status-M">${esc(line)}</div>`;
-    } else if (line.startsWith('A ') || line.startsWith(' A')) {
-      html += `<div class="status-A">${esc(line)}</div>`;
-    } else if (line.startsWith('D ') || line.startsWith(' D')) {
-      html += `<div class="status-D">${esc(line)}</div>`;
-    } else if (line.startsWith('?')) {
-      html += `<div class="status-?">${esc(line)}</div>`;
-    } else {
-      html += `<div>${esc(line)}</div>`;
-    }
+    if (line.startsWith('##'))              html += `<div class="status-branch">${esc(line)}</div>`;
+    else if (/^[ M]M/.test(line))          html += `<div class="status-M">${esc(line)}</div>`;
+    else if (/^A[ A]/.test(line))          html += `<div class="status-A">${esc(line)}</div>`;
+    else if (/^[ D]D/.test(line))          html += `<div class="status-D">${esc(line)}</div>`;
+    else if (line.startsWith('?'))         html += `<div class="status-?">${esc(line)}</div>`;
+    else                                   html += `<div>${esc(line)}</div>`;
   }
 
   setPanel('statusPanel', html || '<span style="color:var(--green)">Nothing to commit</span>');
 
-  // Atualiza dot da sidebar
   const dot = document.getElementById(`dot-${currentProject}`);
   if (dot) {
     const hasChanges = lines.some(l => !l.startsWith('##') && l.trim());
     dot.className = `project-dot ${hasChanges ? 'dirty' : 'ok'}`;
   }
 
-  // Badge
   const changed = lines.filter(l => l.trim() && !l.startsWith('##')).length;
-  const badge = document.getElementById('statusBadge');
+  const badge   = document.getElementById('statusBadge');
   if (badge) badge.textContent = changed ? `${changed} file(s)` : 'clean';
 }
 
 async function loadDiff(full) {
   setPanel('diffPanel', '<span class="loading">loading</span>');
-  const data = await api(`/api/diff?project=${currentProject}&full=${full?1:0}`);
+  const data  = await api(`/api/diff?project=${currentProject}&full=${full?1:0}`);
   const lines = (data.output || '').split('\n');
 
   if (!data.output || data.output.trim() === '') {
@@ -919,63 +1315,43 @@ async function loadDiff(full) {
 
   let html = '';
   for (const line of lines) {
-    if (line.startsWith('+++) ') || line.startsWith('--- ')) {
-      html += `<div class="diff-hdr">${esc(line)}</div>`;
-    } else if (line.startsWith('+++') || line.startsWith('---')) {
-      html += `<div class="diff-hdr">${esc(line)}</div>`;
-    } else if (line.startsWith('+')) {
-      html += `<div class="diff-add">${esc(line)}</div>`;
-    } else if (line.startsWith('-')) {
-      html += `<div class="diff-del">${esc(line)}</div>`;
-    } else if (line.startsWith('@@')) {
-      html += `<div class="diff-meta">${esc(line)}</div>`;
-    } else {
-      html += `<div>${esc(line)}</div>`;
-    }
+    if (line.startsWith('+++') || line.startsWith('---')) html += `<div class="diff-hdr">${esc(line)}</div>`;
+    else if (line.startsWith('+'))  html += `<div class="diff-add">${esc(line)}</div>`;
+    else if (line.startsWith('-'))  html += `<div class="diff-del">${esc(line)}</div>`;
+    else if (line.startsWith('@@')) html += `<div class="diff-meta">${esc(line)}</div>`;
+    else                            html += `<div>${esc(line)}</div>`;
   }
-
   setPanel('diffPanel', html);
 }
 
 async function loadLog() {
   setPanel('diffPanel', '<span class="loading">loading</span>');
-  const data = await api(`/api/log?project=${currentProject}`);
+  const data  = await api(`/api/log?project=${currentProject}`);
   const lines = (data.output || '').split('\n');
-
   let html = '<div style="margin-bottom:8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">Last 10 commits</div>';
   for (const line of lines) {
     const parts = line.match(/^([a-f0-9]+)\s(.*)$/);
-    if (parts) {
-      html += `<div style="margin-bottom:4px"><span class="log-hash">${parts[1]}</span> <span class="log-msg">${esc(parts[2])}</span></div>`;
-    } else if (line.trim()) {
-      html += `<div>${esc(line)}</div>`;
-    }
+    if (parts) html += `<div style="margin-bottom:4px"><span class="log-hash">${parts[1]}</span> <span class="log-msg">${esc(parts[2])}</span></div>`;
+    else if (line.trim()) html += `<div>${esc(line)}</div>`;
   }
-
   setPanel('diffPanel', html || '<span style="color:var(--muted)">No commits</span>');
 }
 
 async function loadBranches() {
   setPanel('diffPanel', '<span class="loading">loading</span>');
-  const data = await api(`/api/branches?project=${currentProject}`);
+  const data  = await api(`/api/branches?project=${currentProject}`);
   const lines = (data.output || '').split('\n');
-
   let html = '<div style="margin-bottom:8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px">Branches</div>';
   for (const line of lines) {
-    if (line.startsWith('*')) {
-      html += `<div style="color:var(--green)">${esc(line)}</div>`;
-    } else if (line.trim()) {
-      html += `<div style="color:var(--muted)">${esc(line)}</div>`;
-    }
+    if (line.startsWith('*'))  html += `<div style="color:var(--green)">${esc(line)}</div>`;
+    else if (line.trim())      html += `<div style="color:var(--muted)">${esc(line)}</div>`;
   }
-
   html += `
     <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <input id="branchInput" placeholder="new-branch" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;outline:none;width:160px" />
+      <input id="branchInput" placeholder="new-branch" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 10px;outline:none;width:160px"/>
       <button class="btn" onclick="doNewBranch()" style="font-size:11px;padding:5px 10px">+ New branch</button>
-      <button class="btn" onclick="doCheckout()" style="font-size:11px;padding:5px 10px">→ Checkout</button>
+      <button class="btn" onclick="doCheckout()"  style="font-size:11px;padding:5px 10px">→ Checkout</button>
     </div>`;
-
   setPanel('diffPanel', html);
 }
 
@@ -987,133 +1363,71 @@ async function openInVscode() {
 async function doCommit() {
   const msg = document.getElementById('commitMsg')?.value?.trim();
   if (!msg) { showToast('Enter a commit message', true); return; }
-
   const data = await apiPost('/api/commit', { project: currentProject, message: msg });
   showToast(data.ok ? `✓ Commit: "${msg}"` : `✗ ${data.output}`, !data.ok);
-  if (data.ok) {
-    document.getElementById('commitMsg').value = '';
-    loadStatus();
-  }
+  if (data.ok) { document.getElementById('commitMsg').value = ''; loadStatus(); }
 }
 
 async function doGenerateReadme() {
-  const btn = document.getElementById('readmeBtn');
+  const btn   = document.getElementById('readmeBtn');
   const model = document.getElementById('ollamaModel')?.value || 'phi3';
-
   if (!currentProject) return;
-
   btn.disabled = true;
   btn.textContent = '⏳ Generating...';
   showToast(`Generating README with Ollama (${model})...`);
-
-  const data = await apiPost('/api/generate_readme', {
-    project: currentProject,
-    model,
-  });
-
+  const data = await apiPost('/api/generate_readme', { project: currentProject, model });
   btn.disabled = false;
   btn.textContent = '📄 README';
-
-  if (!data.ok) {
-    showToast(`✗ ${data.output}`, true);
-    return;
-  }
-
-  const existingEl = document.getElementById('readmeExisting');
-  const generatedEl = document.getElementById('readmeGenerated');
-  const labelEl = document.getElementById('readmeExistingLabel');
-
-  existingEl.value = data.existing || '';
-  generatedEl.value = data.output;
-  labelEl.textContent = data.existing ? '— existing' : '— none';
-
+  if (!data.ok) { showToast(`✗ ${data.output}`, true); return; }
+  document.getElementById('readmeExisting').value = data.existing || '';
+  document.getElementById('readmeGenerated').value = data.output;
+  document.getElementById('readmeExistingLabel').textContent = data.existing ? '— existing' : '— none';
   document.getElementById('readme_error').style.display = 'none';
   document.getElementById('readmeModal').classList.add('show');
 }
 
-function closeReadmeModal() {
-  document.getElementById('readmeModal').classList.remove('show');
-}
+function closeReadmeModal() { document.getElementById('readmeModal').classList.remove('show'); }
 
 async function doSaveReadme() {
   const content = document.getElementById('readmeGenerated').value.trim();
-  const errEl = document.getElementById('readme_error');
-
-  if (!content) {
-    errEl.textContent = 'Content is empty.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  const data = await apiPost('/api/save_readme', {
-    project: currentProject,
-    content,
-  });
-
-  if (!data.ok) {
-    errEl.textContent = data.output;
-    errEl.style.display = 'block';
-    return;
-  }
-
+  const errEl   = document.getElementById('readme_error');
+  if (!content) { errEl.textContent = 'Content is empty.'; errEl.style.display = 'block'; return; }
+  const data = await apiPost('/api/save_readme', { project: currentProject, content });
+  if (!data.ok) { errEl.textContent = data.output; errEl.style.display = 'block'; return; }
   closeReadmeModal();
   showToast('✓ README.md saved successfully');
 }
 
-document.getElementById('readmeModal').addEventListener('click', function(e) {
-  if (e.target === this) closeReadmeModal();
-});
+document.getElementById('readmeModal').addEventListener('click', function(e) { if (e.target === this) closeReadmeModal(); });
 
 async function loadOllamaModels() {
   const select = document.getElementById('ollamaModel');
   if (!select) return;
-
   const data = await api('/api/ollama_models');
-
-  if (!data.ok || !data.models.length) {
-    select.innerHTML = '<option value="">Ollama unavailable</option>';
-    return;
-  }
-
-  select.innerHTML = data.models
-    .map(m => `<option value="${m}">${m}</option>`)
-    .join('');
+  if (!data.ok || !data.models.length) { select.innerHTML = '<option value="">Ollama unavailable</option>'; return; }
+  select.innerHTML = data.models.map(m => `<option value="${m}">${m}</option>`).join('');
 }
 
 async function doSuggestCommit() {
-  const btn = document.getElementById('suggestBtn');
-  const input = document.getElementById('commitMsg');
+  const btn     = document.getElementById('suggestBtn');
+  const input   = document.getElementById('commitMsg');
   const context = document.getElementById('commitContext')?.value?.trim() || '';
-  const model = document.getElementById('ollamaModel')?.value || 'phi3';
-
+  const model   = document.getElementById('ollamaModel')?.value || 'phi3';
   if (!currentProject) return;
-
   btn.disabled = true;
   btn.textContent = '⏳ Generating...';
   showToast(`Querying Ollama (${model})...`);
-
-  const data = await apiPost('/api/suggest_commit', {
-    project: currentProject,
-    context,
-    model,
-  });
-
+  const data = await apiPost('/api/suggest_commit', { project: currentProject, context, model });
   btn.disabled = false;
   btn.textContent = '✨ Suggest';
-
-  if (data.ok) {
-    input.value = data.output;
-    input.focus();
-    showToast('✓ Message suggested by Ollama');
-  } else {
-    showToast(`✗ ${data.output}`, true);
-  }
+  if (data.ok) { input.value = data.output; input.focus(); showToast('✓ Message suggested by Ollama'); }
+  else showToast(`✗ ${data.output}`, true);
 }
 
 async function doPull() {
   showToast('Running pull...');
   const data = await apiPost('/api/pull', { project: currentProject });
-  showToast(data.ok ? `✓ Pull complete` : `✗ ${data.output}`, !data.ok);
+  showToast(data.ok ? '✓ Pull complete' : `✗ ${data.output}`, !data.ok);
   if (data.ok) loadStatus();
 }
 
@@ -1138,38 +1452,21 @@ async function doCheckout() {
 // ─────────────────────────────────────────────
 async function doDetectProject() {
   const pathInput = document.getElementById('np_path');
-  const btn = document.getElementById('detectBtn');
-  const errEl = document.getElementById('np_error');
-  const projPath = pathInput.value.trim();
-
-  if (!projPath) {
-    errEl.textContent = 'Please enter the folder path first.';
-    errEl.style.display = 'block';
-    return;
-  }
-
+  const btn       = document.getElementById('detectBtn');
+  const errEl     = document.getElementById('np_error');
+  const projPath  = pathInput.value.trim();
+  if (!projPath) { errEl.textContent = 'Please enter the folder path first.'; errEl.style.display = 'block'; return; }
   btn.disabled = true;
   btn.textContent = '⏳ Detecting...';
   errEl.style.display = 'none';
-
-  const encoded = encodeURIComponent(projPath);
-  const data = await api(`/api/detect_project?path=${encoded}`);
-
+  const data = await api(`/api/detect_project?path=${encodeURIComponent(projPath)}`);
   btn.disabled = false;
   btn.textContent = '🔎 Load';
-
-  if (!data.ok) {
-    errEl.textContent = data.output;
-    errEl.style.display = 'block';
-    return;
-  }
-
-  // Preenche os campos automaticamente
+  if (!data.ok) { errEl.textContent = data.output; errEl.style.display = 'block'; return; }
   document.getElementById('np_name').value   = data.name || '';
   document.getElementById('np_remote').value = data.git_remote || '';
   document.getElementById('np_stack').value  = (data.stack || []).join(', ');
   if (data.type) document.getElementById('np_type').value = data.type;
-
   showToast(`✓ Project detected: ${data.name}`);
 }
 
@@ -1183,24 +1480,15 @@ function openNewProjectModal() {
   document.getElementById('newProjectModal').classList.add('show');
 }
 
-function closeNewProjectModal() {
-  document.getElementById('newProjectModal').classList.remove('show');
-}
+function closeNewProjectModal() { document.getElementById('newProjectModal').classList.remove('show'); }
 
 async function submitNewProject() {
-  const name = document.getElementById('np_name').value.trim();
-  const path = document.getElementById('np_path').value.trim();
+  const name  = document.getElementById('np_name').value.trim();
+  const path  = document.getElementById('np_path').value.trim();
   const errEl = document.getElementById('np_error');
-
-  if (!name || !path) {
-    errEl.textContent = 'Name and path are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-
+  if (!name || !path) { errEl.textContent = 'Name and path are required.'; errEl.style.display = 'block'; return; }
   const body = {
-    name,
-    path,
+    name, path,
     description: document.getElementById('np_desc').value.trim(),
     objective:   document.getElementById('np_obj').value.trim(),
     stack:       document.getElementById('np_stack').value.trim(),
@@ -1209,27 +1497,16 @@ async function submitNewProject() {
     git_remote:  document.getElementById('np_remote').value.trim(),
     init_git:    document.getElementById('np_init').checked,
   };
-
   const data = await apiPost('/api/add_project', body);
-
-  if (!data.ok) {
-    errEl.textContent = data.output;
-    errEl.style.display = 'block';
-    return;
-  }
-
+  if (!data.ok) { errEl.textContent = data.output; errEl.style.display = 'block'; return; }
   closeNewProjectModal();
   showToast(`✓ Project '${name}' added`);
-
-  // Recarrega lista de projetos e atualiza sidebar
   const r = await fetch(`${API}/api/projects`);
   projects = await r.json();
   renderSidebar();
 }
 
-document.getElementById('newProjectModal').addEventListener('click', function(e) {
-  if (e.target === this) closeNewProjectModal();
-});
+document.getElementById('newProjectModal').addEventListener('click', function(e) { if (e.target === this) closeNewProjectModal(); });
 
 // ─────────────────────────────────────────────
 // EDITAR / REMOVER PROJETO
@@ -1237,7 +1514,6 @@ document.getElementById('newProjectModal').addEventListener('click', function(e)
 function openEditModal() {
   const cfg = projects[currentProject];
   if (!cfg) return;
-
   document.getElementById('ep_path').value   = cfg.path || '';
   document.getElementById('ep_desc').value   = cfg.description || '';
   document.getElementById('ep_obj').value    = cfg.objective || '';
@@ -1249,13 +1525,11 @@ function openEditModal() {
   document.getElementById('editProjectModal').classList.add('show');
 }
 
-function closeEditModal() {
-  document.getElementById('editProjectModal').classList.remove('show');
-}
+function closeEditModal() { document.getElementById('editProjectModal').classList.remove('show'); }
 
 async function submitEditProject() {
   const errEl = document.getElementById('ep_error');
-  const body = {
+  const body  = {
     name:        currentProject,
     path:        document.getElementById('ep_path').value.trim(),
     description: document.getElementById('ep_desc').value.trim(),
@@ -1265,19 +1539,10 @@ async function submitEditProject() {
     type:        document.getElementById('ep_type').value,
     git_remote:  document.getElementById('ep_remote').value.trim(),
   };
-
   const data = await apiPost('/api/edit_project', body);
-
-  if (!data.ok) {
-    errEl.textContent = data.output;
-    errEl.style.display = 'block';
-    return;
-  }
-
+  if (!data.ok) { errEl.textContent = data.output; errEl.style.display = 'block'; return; }
   closeEditModal();
   showToast(`✓ Project '${currentProject}' updated`);
-
-  // Recarrega projetos e re-seleciona o atual
   const r = await fetch(`${API}/api/projects`);
   projects = await r.json();
   renderSidebar();
@@ -1287,31 +1552,21 @@ async function submitEditProject() {
 async function confirmRemove() {
   const confirmed = window.confirm(`Remove '${currentProject}' from the list?\n\nThe folder will NOT be deleted.`);
   if (!confirmed) return;
-
   const data = await apiPost('/api/remove_project', { name: currentProject });
-  if (!data.ok) {
-    showToast(`✗ ${data.output}`, true);
-    return;
-  }
-
+  if (!data.ok) { showToast(`✗ ${data.output}`, true); return; }
   showToast(`✓ Project '${currentProject}' removed`);
   currentProject = null;
-
   const r = await fetch(`${API}/api/projects`);
   projects = await r.json();
   renderSidebar();
-
-  // Volta à tela inicial
   document.getElementById('mainArea').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace">
       <span style="font-size:40px;opacity:0.3">🐼</span>
-      <span style="font-size:12px">Select a project</span>
+      <span style="font-size:12px">Select a project or open Ecosystem view</span>
     </div>`;
 }
 
-document.getElementById('editProjectModal').addEventListener('click', function(e) {
-  if (e.target === this) closeEditModal();
-});
+document.getElementById('editProjectModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
 // ─────────────────────────────────────────────
 // PUSH MODAL
@@ -1322,22 +1577,16 @@ function openPushModal() {
   document.getElementById('pushModal').classList.add('show');
 }
 
-function closePushModal() {
-  document.getElementById('pushModal').classList.remove('show');
-}
+function closePushModal() { document.getElementById('pushModal').classList.remove('show'); }
 
 async function confirmPush() {
   closePushModal();
   showToast('Running push...');
-  const remote = projects[currentProject]?.git_remote || 'origin';
   const data = await apiPost('/api/push', { project: currentProject, remote: 'origin' });
-  showToast(data.ok ? `✓ Push complete` : `✗ ${data.output}`, !data.ok);
+  showToast(data.ok ? '✓ Push complete' : `✗ ${data.output}`, !data.ok);
 }
 
-// Fecha modal ao clicar fora
-document.getElementById('pushModal').addEventListener('click', function(e) {
-  if (e.target === this) closePushModal();
-});
+document.getElementById('pushModal').addEventListener('click', function(e) { if (e.target === this) closePushModal(); });
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -1370,7 +1619,7 @@ function setPanel(id, html) {
 }
 
 function esc(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 let toastTimer;
