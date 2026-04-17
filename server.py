@@ -9,6 +9,7 @@ Uso:
 
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.request
@@ -32,6 +33,42 @@ except ImportError:
 PROJECTS_FILE = Path(__file__).parent / "projects.json"
 PORT = 8765
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+# ─────────────────────────────────────────────
+# OUTPUT CLEANERS (fallback — mirrors panda_client logic)
+# ─────────────────────────────────────────────
+def _clean_markdown_fences(text: str) -> str:
+    """Removes ```markdown / ``` wrappers that models sometimes add."""
+    text = text.strip()
+    text = re.sub(r"^```(?:markdown)?\s*\n?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\n?```\s*$", "", text)
+    text = re.sub(r"^markdown\s*\n", "", text, flags=re.IGNORECASE)
+    return text.strip()
+
+
+def _clean_commit(raw: str) -> str:
+    """Extracts the first conventional commit subject line from model output."""
+    if not raw:
+        return raw
+    lines = [l.strip() for l in raw.strip().splitlines() if l.strip()]
+    if not lines:
+        return raw
+    conventional_types = ("feat", "fix", "refactor", "docs", "chore", "test", "style", "perf", "build", "ci")
+    candidate = lines[0]
+    for line in lines:
+        if any(line.lower().startswith(t) for t in conventional_types):
+            candidate = line
+            break
+    candidate = candidate.strip("`*\"'")
+    leak_markers = ["developer context:", "generate the commit message", "git status:", "git diff:", "reply only"]
+    lower = candidate.lower()
+    for marker in leak_markers:
+        idx = lower.find(marker)
+        if idx != -1:
+            candidate = candidate[:idx].strip()
+            break
+    return candidate.rstrip(".,;:").strip()
 
 
 # ─────────────────────────────────────────────
@@ -144,17 +181,17 @@ def ecosystem_status() -> dict:
     for name, cfg in projects.items():
         path = cfg.get("path", "")
         entry = {
-            "name":         name,
-            "description":  cfg.get("description", ""),
-            "type":         cfg.get("type", "other"),
-            "stack":        cfg.get("stack", []),
-            "path_exists":  False,
-            "branch":       None,
+            "name":          name,
+            "description":   cfg.get("description", ""),
+            "type":          cfg.get("type", "other"),
+            "stack":         cfg.get("stack", []),
+            "path_exists":   False,
+            "branch":        None,
             "changed_files": 0,
-            "last_commit":  None,
-            "last_message": None,
-            "ahead":        None,
-            "health":       "no_path",
+            "last_commit":   None,
+            "last_message":  None,
+            "ahead":         None,
+            "health":        "no_path",
         }
 
         if not path or not Path(path).exists():
@@ -163,43 +200,31 @@ def ecosystem_status() -> dict:
 
         entry["path_exists"] = True
 
-        # Check if git repo
         if not (Path(path) / ".git").exists():
             entry["health"] = "no_git"
             result[name] = entry
             continue
 
-        # Branch + ahead/behind
         status_r = run_git(path, ["status", "--short", "--branch"])
         if status_r["ok"]:
             lines = status_r["output"].split("\n")
             branch_line = lines[0] if lines else ""
-            # Parse ## main...origin/main [ahead 2]
-            import re
             branch_match = re.match(r"## ([^.]+)", branch_line)
             if branch_match:
                 entry["branch"] = branch_match.group(1).strip()
             ahead_match = re.search(r"\[ahead (\d+)\]", branch_line)
             if ahead_match:
                 entry["ahead"] = int(ahead_match.group(1))
-
-            # Count changed files (lines that are not the branch line)
             changed = [l for l in lines[1:] if l.strip()]
             entry["changed_files"] = len(changed)
 
-        # Last commit time (relative)
         log_r = run_git(path, ["log", "-1", "--format=%cr|||%s"])
         if log_r["ok"] and log_r["output"] and log_r["output"] != "(no output)":
             parts = log_r["output"].split("|||", 1)
             entry["last_commit"]  = parts[0].strip() if len(parts) > 0 else None
             entry["last_message"] = parts[1].strip() if len(parts) > 1 else None
 
-        # Health
-        if entry["changed_files"] > 0:
-            entry["health"] = "dirty"
-        else:
-            entry["health"] = "clean"
-
+        entry["health"] = "dirty" if entry["changed_files"] > 0 else "clean"
         result[name] = entry
 
     return {"ok": True, "projects": result}
@@ -264,19 +289,27 @@ def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
             status=project_cfg.get("status", ""),
             file_structure=structure,
         )
+    # Fallback — direct Ollama call
     name        = project_cfg.get("name", Path(path).name)
     description = project_cfg.get("description", "")
     objective   = project_cfg.get("objective", "")
     stack       = ", ".join(project_cfg.get("stack", []))
     status      = project_cfg.get("status", "")
-    prompt = f"""You are a technical writer. Generate a clean and professional README.md in English for the project below.\n\nProject name: {name}\nDescription: {description}\nObjective: {objective}\nStack: {stack}\nStatus: {status}\n\nFile structure:\n{structure}"""
+    prompt = (
+        "You are a technical writer. Generate a clean README.md in English.\n"
+        "IMPORTANT: Output raw markdown only. Do NOT use ```markdown fences. Start with # ProjectName.\n\n"
+        f"Project name: {name}\nDescription: {description}\nObjective: {objective}\n"
+        f"Stack: {stack}\nStatus: {status}\n\nFile structure:\n{structure}"
+    )
     payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
-                                     headers={"Content-Type": "application/json"}, method="POST")
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/generate", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
         with urllib.request.urlopen(req, timeout=None) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            content = result.get("response", "").strip()
+            result  = json.loads(resp.read().decode("utf-8"))
+            content = _clean_markdown_fences(result.get("response", "").strip())
             if not content:
                 return {"ok": False, "output": "Ollama returned empty response."}
             return {"ok": True, "output": content}
@@ -292,15 +325,28 @@ def suggest_commit_message(path: str, user_context: str = "", model: str = "phi3
     if _PANDA_AVAILABLE:
         _panda.text_model = model
         return _panda.commit_message(diff=diff_text, status=status_text, extra_context=user_context)
-    context_block = f"\nDeveloper context: {user_context}" if user_context.strip() else ""
-    prompt = f"""You are a development assistant. Generate ONE conventional commit message in English.\nReply ONLY with the commit message.\n{context_block}\nStatus:\n{status_text}\nDiff:\n{diff_text[:3000]}"""
-    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
+    # Fallback — direct Ollama call with tighter prompt
+    context_block = f"\n### notes from developer\n{user_context}" if user_context.strip() else ""
+    prompt = (
+        "You are a git commit message generator.\n"
+        "Output ONE line only: <type>(<scope>): <description>\n"
+        "Valid types: feat, fix, refactor, docs, chore, test, style, perf\n"
+        "Write NOTHING else. Stop after the first line.\n\n"
+        f"### git status\n{status_text}\n\n"
+        f"### git diff\n{diff_text[:3000]}"
+        f"{context_block}\n\n"
+        "Commit message:"
+    )
+    payload = json.dumps({"model": model, "prompt": prompt, "stream": False,
+                          "options": {"num_predict": 80}}).encode("utf-8")
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
-                                     headers={"Content-Type": "application/json"}, method="POST")
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/generate", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
         with urllib.request.urlopen(req, timeout=None) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            message = result.get("response", "").strip()
+            result  = json.loads(resp.read().decode("utf-8"))
+            message = _clean_commit(result.get("response", "").strip())
             if not message:
                 return {"ok": False, "output": "Ollama returned empty response."}
             return {"ok": True, "output": message}
@@ -339,7 +385,7 @@ def detect_project_from_path(path: str) -> dict:
         return {"ok": False, "output": f"Pasta não encontrada: {path}"}
     if not (root / ".git").exists():
         return {"ok": False, "output": "Nenhum repositório .git encontrado nesta pasta."}
-    name = root.name
+    name   = root.name
     remote = run_git(path, ["remote", "get-url", "origin"])
     git_remote = remote["output"] if remote["ok"] else ""
     stack_hints = {
@@ -359,7 +405,7 @@ def detect_project_from_path(path: str) -> dict:
         project_type = "contract"
     elif (root / "package.json").exists():
         try:
-            pkg = json.loads((root / "package.json").read_text(encoding="utf-8", errors="replace"))
+            pkg  = json.loads((root / "package.json").read_text(encoding="utf-8", errors="replace"))
             deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
             if any(k in deps for k in ["next", "react", "vue", "svelte"]):
                 project_type = "frontend"
@@ -431,7 +477,7 @@ class GitHandler(BaseHTTPRequestHandler):
             ".css":  "text/css",
             ".json": "application/json",
         }
-        ct = content_types.get(ext, "text/plain")
+        ct   = content_types.get(ext, "text/plain")
         body = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", ct)
@@ -451,18 +497,15 @@ class GitHandler(BaseHTTPRequestHandler):
         path   = parsed.path
         params = parse_qs(parsed.query)
 
-        if path == "/" or path == "/index.html":
+        if path in ("/", "/index.html"):
             self.serve_file(STATIC_DIR / "index.html")
             return
-
         if path == "/api/projects":
             self.send_json(load_projects())
             return
-
         if path == "/api/ecosystem_status":
             self.send_json(ecosystem_status())
             return
-
         if path == "/api/status":
             name = params.get("project", [""])[0]
             projects = load_projects()
@@ -471,7 +514,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_status(projects[name]["path"]))
             return
-
         if path == "/api/diff":
             name = params.get("project", [""])[0]
             full = params.get("full", ["0"])[0] == "1"
@@ -480,10 +522,8 @@ class GitHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "output": "Projeto não encontrado"}, 404)
                 return
             proj_path = projects[name]["path"]
-            result = git_diff_full(proj_path) if full else git_diff(proj_path)
-            self.send_json(result)
+            self.send_json(git_diff_full(proj_path) if full else git_diff(proj_path))
             return
-
         if path == "/api/log":
             name = params.get("project", [""])[0]
             projects = load_projects()
@@ -492,11 +532,9 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_log(projects[name]["path"]))
             return
-
         if path == "/api/ollama_models":
             self.send_json(get_ollama_models())
             return
-
         if path == "/api/detect_project":
             proj_path = params.get("path", [""])[0]
             if not proj_path:
@@ -504,7 +542,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(detect_project_from_path(proj_path))
             return
-
         if path == "/api/branches":
             name = params.get("project", [""])[0]
             projects = load_projects()
@@ -517,10 +554,10 @@ class GitHandler(BaseHTTPRequestHandler):
         self.send_json({"ok": False, "output": "Rota não encontrada"}, 404)
 
     def do_POST(self):
-        length = int(self.headers.get("Content-Length", 0))
-        body   = json.loads(self.rfile.read(length) or b"{}")
-        parsed = urlparse(self.path)
-        path   = parsed.path
+        length   = int(self.headers.get("Content-Length", 0))
+        body     = json.loads(self.rfile.read(length) or b"{}")
+        parsed   = urlparse(self.path)
+        path     = parsed.path
         projects = load_projects()
 
         def get_project_path(b):
@@ -540,7 +577,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_commit(proj_path, message))
             return
-
         if path == "/api/push":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -548,7 +584,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_push(proj_path, body.get("remote", "origin"), body.get("branch", "")))
             return
-
         if path == "/api/pull":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -556,7 +591,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_pull(proj_path))
             return
-
         if path == "/api/checkout":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -568,7 +602,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_checkout(proj_path, branch))
             return
-
         if path == "/api/new_branch":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -580,7 +613,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_new_branch(proj_path, branch))
             return
-
         if path == "/api/open_vscode":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -588,7 +620,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(open_vscode(proj_path))
             return
-
         if path == "/api/init":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -596,7 +627,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(git_init(proj_path))
             return
-
         if path == "/api/add_project":
             name = body.get("name", "").strip()
             if not name:
@@ -628,7 +658,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 result["output"] += f"\n{init_result['output']}"
             self.send_json(result)
             return
-
         if path == "/api/edit_project":
             name = body.get("name", "").strip()
             if not name or name not in projects:
@@ -647,7 +676,6 @@ class GitHandler(BaseHTTPRequestHandler):
             }
             self.send_json(save_project(name, cfg))
             return
-
         if path == "/api/remove_project":
             name = body.get("name", "").strip()
             if not name:
@@ -655,25 +683,22 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(remove_project(name))
             return
-
         if path == "/api/ollama_models":
             self.send_json(get_ollama_models())
             return
-
         if path == "/api/generate_readme":
             proj_path, name = get_project_path(body)
             if not proj_path:
                 self.send_json({"ok": False, "output": f"Projeto '{name}' não encontrado"}, 404)
                 return
-            model = body.get("model", "phi3")
-            cfg = {**projects.get(name, {}), "name": name}
+            model    = body.get("model", "phi3")
+            cfg      = {**projects.get(name, {}), "name": name}
             existing = get_existing_readme(proj_path)
-            result = generate_readme(proj_path, cfg, model)
+            result   = generate_readme(proj_path, cfg, model)
             if result["ok"]:
                 result["existing"] = existing
             self.send_json(result)
             return
-
         if path == "/api/save_readme":
             proj_path, name = get_project_path(body)
             if not proj_path:
@@ -685,7 +710,6 @@ class GitHandler(BaseHTTPRequestHandler):
                 return
             self.send_json(save_readme(proj_path, content))
             return
-
         if path == "/api/suggest_commit":
             proj_path, name = get_project_path(body)
             if not proj_path:
