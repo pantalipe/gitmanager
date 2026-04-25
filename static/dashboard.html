@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PandaEcosystem — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0c0f;
+    --surface:   #111418;
+    --border:    #1e2228;
+    --border2:   #2a3040;
+    --text:      #c8d0dc;
+    --muted:     #4a5568;
+    --accent:    #00d4ff;
+    --green:     #00e87a;
+    --yellow:    #ffc740;
+    --red:       #ff4d6a;
+    --purple:    #b57bff;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-head: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.04) 2px,
+      rgba(0,0,0,0.04) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .logo {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .build-tag {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--border2);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .ollama-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.offline { background: var(--red); }
+
+  #last-refresh {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .btn-refresh {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn-refresh:hover {
+    background: rgba(0,212,255,0.08);
+    border-color: var(--accent);
+  }
+  .btn-refresh.spinning { opacity: 0.5; pointer-events: none; }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: flex;
+    gap: 1px;
+    padding: 0 32px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-stat {
+    flex: 1;
+    background: var(--surface);
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .summary-stat .val {
+    font-family: var(--font-head);
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  .summary-stat .val.green  { color: var(--green); }
+  .summary-stat .val.yellow { color: var(--yellow); }
+  .summary-stat .val.red    { color: var(--red); }
+  .summary-stat .val.accent { color: var(--accent); }
+
+  .summary-stat .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  /* ── LAYERS ── */
+  main {
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .layer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .layer-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+  }
+
+  .layer-count {
+    font-size: 10px;
+    color: var(--border2);
+    margin-left: auto;
+  }
+
+  .layer-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* layer accent colors */
+  .layer[data-layer="dev"] .layer-label    { color: var(--accent); }
+  .layer[data-layer="content"] .layer-label { color: var(--purple); }
+  .layer[data-layer="web3"] .layer-label   { color: var(--yellow); }
+  .layer[data-layer="other"] .layer-label  { color: var(--muted); }
+
+  /* ── PROJECT GRID ── */
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+  }
+
+  /* ── PROJECT CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.15s;
+    animation: fadeIn 0.3s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card.health-clean  { border-color: var(--border); }
+  .card.health-clean::before  { background: var(--green); }
+  .card.health-dirty  { border-color: rgba(255,199,64,0.25); }
+  .card.health-dirty::before  { background: var(--yellow); }
+  .card.health-no_git { border-color: var(--border); }
+  .card.health-no_git::before { background: var(--muted); }
+  .card.health-no_path { opacity: 0.45; }
+  .card.health-no_path::before { background: var(--red); }
+
+  .card:hover {
+    border-color: var(--border2);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: #fff;
+    letter-spacing: 0.3px;
+  }
+
+  .semaphore {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .sem-green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .sem-yellow { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .sem-grey   { background: var(--muted); }
+  .sem-red    { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  .card-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+
+  .tag.branch { color: var(--accent); border-color: rgba(0,212,255,0.2); }
+  .tag.stack  { color: #7a9cc7; border-color: rgba(122,156,199,0.2); }
+  .tag.dirty  { color: var(--yellow); border-color: rgba(255,199,64,0.25); }
+  .tag.ahead  { color: var(--purple); border-color: rgba(181,123,255,0.25); }
+
+  .card-commit {
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  .commit-time {
+    color: var(--border2);
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+
+  .commit-msg {
+    color: #7a8899;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── MODELS SECTION ── */
+  .models-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .models-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--green);
+  }
+
+  .models-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .model-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid rgba(0,232,122,0.2);
+    border-radius: 3px;
+    color: var(--green);
+    letter-spacing: 0.3px;
+  }
+
+  .models-offline {
+    font-size: 11px;
+    color: var(--red);
+  }
+
+  /* ── SKELETON / LOADING ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 3px;
+    height: 12px;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── ERROR STATE ── */
+  .error-banner {
+    background: rgba(255,77,106,0.08);
+    border: 1px solid rgba(255,77,106,0.3);
+    border-radius: 4px;
+    padding: 14px 18px;
+    color: var(--red);
+    font-size: 12px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 16px 32px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--border2);
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">Panda<span>Ecosystem</span></div>
+    <div class="build-tag">dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="ollama-pill">
+      <div class="dot" id="ollama-dot"></div>
+      <span id="ollama-label">ollama</span>
+    </div>
+    <div id="last-refresh">—</div>
+    <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">↻ refresh</button>
+  </div>
+</header>
+
+<div class="summary-bar" id="summary-bar">
+  <div class="summary-stat"><div class="val accent" id="s-total">—</div><div class="lbl">Projects</div></div>
+  <div class="summary-stat"><div class="val green"  id="s-clean">—</div><div class="lbl">Clean</div></div>
+  <div class="summary-stat"><div class="val yellow" id="s-dirty">—</div><div class="lbl">Dirty</div></div>
+  <div class="summary-stat"><div class="val red"    id="s-missing">—</div><div class="lbl">Missing</div></div>
+  <div class="summary-stat"><div class="val"        id="s-ahead">—</div><div class="lbl">Ahead of remote</div></div>
+</div>
+
+<main id="main-content">
+  <div class="skeleton" style="height:180px;border-radius:4px;"></div>
+</main>
+
+<footer>
+  <span>gitmanager · pandaecosystem</span>
+  <span id="footer-time"></span>
+</footer>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+const API_BASE    = 'http://localhost:8765';
+const AUTO_RELOAD = 30_000; // 30s
+
+// Layer grouping: project name fragments -> layer key
+const LAYER_MAP = {
+  dev:     ['gitmanager', 'pandagent', 'ollama-bench'],
+  content: ['rotman', 'conduler'],
+  web3:    ['pandapoints', 'pp-testenv'],
+};
+
+const LAYER_LABELS = {
+  dev:     '① dev tooling',
+  content: '② content pipeline',
+  web3:    '③ web3 product',
+  other:   '④ other',
+};
+
+// ── UTILS ─────────────────────────────────────────────────────
+function layerFor(name) {
+  for (const [layer, keys] of Object.entries(LAYER_MAP)) {
+    if (keys.some(k => name.toLowerCase().includes(k.toLowerCase()))) return layer;
+  }
+  return 'other';
+}
+
+function semClass(health) {
+  return { clean: 'sem-green', dirty: 'sem-yellow', no_git: 'sem-grey', no_path: 'sem-red' }[health] ?? 'sem-grey';
+}
+
+function cardClass(health) {
+  return `card health-${health}`;
+}
+
+function nowStr() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── CARD RENDER ───────────────────────────────────────────────
+function renderCard(name, p) {
+  const stacks  = (p.stack || []).map(s => `<span class="tag stack">${esc(s)}</span>`).join('');
+  const branch  = p.branch  ? `<span class="tag branch">⎇ ${esc(p.branch)}</span>` : '';
+  const dirty   = p.changed_files > 0 ? `<span class="tag dirty">${p.changed_files} changed</span>` : '';
+  const ahead   = p.ahead   ? `<span class="tag ahead">↑${p.ahead}</span>` : '';
+  const commitRow = (p.last_commit && p.last_message)
+    ? `<div class="card-commit">
+         <span class="commit-time">${esc(p.last_commit)}</span>
+         <span class="commit-msg">${esc(p.last_message)}</span>
+       </div>`
+    : '';
+  const noPath  = !p.path_exists ? '<span class="tag" style="color:var(--red)">path missing</span>' : '';
+  const noGit   = p.path_exists && p.health === 'no_git' ? '<span class="tag">no git</span>' : '';
+
+  return `
+    <div class="${cardClass(p.health)}">
+      <div class="card-top">
+        <div class="card-name">${esc(name)}</div>
+        <div class="semaphore ${semClass(p.health)}"></div>
+      </div>
+      ${p.description ? `<div class="card-desc">${esc(p.description)}</div>` : ''}
+      <div class="card-meta">
+        ${branch}${dirty}${ahead}${stacks}${noPath}${noGit}
+      </div>
+      ${commitRow}
+    </div>`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────
+function renderAll(projects) {
+  // Group by layer
+  const layers = { dev: {}, content: {}, web3: {}, other: {} };
+  let total = 0, clean = 0, dirty = 0, missing = 0, aheadCount = 0;
+
+  for (const [name, p] of Object.entries(projects)) {
+    layers[layerFor(name)][name] = p;
+    total++;
+    if (p.health === 'clean')   clean++;
+    if (p.health === 'dirty')   dirty++;
+    if (!p.path_exists)         missing++;
+    if (p.ahead)                aheadCount++;
+  }
+
+  // Summary
+  document.getElementById('s-total').textContent   = total;
+  document.getElementById('s-clean').textContent   = clean;
+  document.getElementById('s-dirty').textContent   = dirty;
+  document.getElementById('s-missing').textContent = missing;
+  document.getElementById('s-ahead').textContent   = aheadCount;
+
+  // Build HTML
+  let html = '';
+  for (const [layerKey, label] of Object.entries(LAYER_LABELS)) {
+    const group = layers[layerKey];
+    if (Object.keys(group).length === 0) continue;
+
+    const cards = Object.entries(group)
+      .map(([name, p]) => renderCard(name, p))
+      .join('');
+
+    html += `
+      <div class="layer" data-layer="${layerKey}">
+        <div class="layer-header">
+          <div class="layer-label">${label}</div>
+          <div class="layer-line"></div>
+          <div class="layer-count">${Object.keys(group).length} projects</div>
+        </div>
+        <div class="project-grid">${cards}</div>
+      </div>`;
+  }
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function renderModels(modelsData) {
+  // Inject models block at bottom of main
+  const section = document.createElement('div');
+  section.className = 'layer';
+  section.innerHTML = `
+    <div class="layer-header">
+      <div class="layer-label" style="color:var(--green)">ollama models</div>
+      <div class="layer-line"></div>
+    </div>
+    <div class="models-section">
+      ${modelsData.ok
+        ? `<div class="models-list">${modelsData.models.map(m => `<div class="model-chip">${esc(m)}</div>`).join('')}</div>`
+        : `<div class="models-offline">offline — ${esc(modelsData.output ?? '')}</div>`
+      }
+    </div>`;
+  document.getElementById('main-content').appendChild(section);
+}
+
+// ── LOAD ──────────────────────────────────────────────────────
+async function loadAll() {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('spinning');
+  btn.textContent = '↻ loading…';
+
+  try {
+    const [ecoRes, modRes] = await Promise.all([
+      fetch(`${API_BASE}/api/ecosystem_status`).then(r => r.json()),
+      fetch(`${API_BASE}/api/ollama_models`).then(r => r.json()),
+    ]);
+
+    if (!ecoRes.ok) throw new Error(ecoRes.output ?? 'ecosystem_status failed');
+
+    renderAll(ecoRes.projects);
+    renderModels(modRes);
+
+    // Ollama pill
+    const dot   = document.getElementById('ollama-dot');
+    const label = document.getElementById('ollama-label');
+    if (modRes.ok && modRes.models.length > 0) {
+      dot.className   = 'dot online';
+      label.textContent = `ollama · ${modRes.models.length} models`;
+    } else {
+      dot.className   = 'dot offline';
+      label.textContent = 'ollama offline';
+    }
+
+    const ts = nowStr();
+    document.getElementById('last-refresh').textContent = `updated ${ts}`;
+    document.getElementById('footer-time').textContent  = `last refresh: ${ts}`;
+
+  } catch (err) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="error-banner">
+        ✗ Could not reach gitmanager at ${API_BASE}<br>
+        <small style="opacity:.6">Make sure <code>python server.py</code> is running in the gitmanager folder.</small>
+      </div>`;
+    document.getElementById('ollama-dot').className  = 'dot offline';
+  } finally {
+    btn.classList.remove('spinning');
+    btn.textContent = '↻ refresh';
+  }
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, AUTO_RELOAD);
+</script>
+</body>
+</html>

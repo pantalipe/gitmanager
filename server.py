@@ -467,6 +467,9 @@ class GitHandler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             self.serve_file(STATIC_DIR / "index.html")
             return
+        if path in ("/dashboard", "/dashboard.html"):
+            self.serve_file(STATIC_DIR / "dashboard.html")
+            return
         if path == "/api/projects":
             self.send_json(load_projects())
             return
@@ -671,6 +674,7 @@ def main():
     STATIC_DIR.mkdir(exist_ok=True)
     print(f"Panda Git Manager")
     print(f"   http://localhost:{PORT}")
+    print(f"   dashboard: http://localhost:{PORT}/dashboard")
     print(f"   PandaClient: {'loaded' if _PANDA_AVAILABLE else 'not found (fallback mode)'}")
     print()
     projects = load_projects()
