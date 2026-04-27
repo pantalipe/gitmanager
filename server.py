@@ -167,6 +167,63 @@ def get_ollama_models() -> dict:
         return {"ok": False, "models": [], "output": f"Ollama unavailable: {e}"}
 
 
+def get_bench_results() -> dict:
+    """
+    Reads the most recent bench JSON from ollama-bench/results/.
+    Returns a summarized view: per model -> per category -> avg metrics.
+    """
+    bench_dir = Path(__file__).parent.parent / "ollama-bench" / "results"
+    if not bench_dir.exists():
+        return {"ok": False, "output": "ollama-bench/results not found", "data": {}}
+
+    json_files = sorted(bench_dir.glob("*.json"), reverse=True)
+    # Filter out .gitkeep and non-JSON
+    json_files = [f for f in json_files if f.suffix == ".json" and f.stem != ".gitkeep"]
+    if not json_files:
+        return {"ok": False, "output": "No bench results found. Run bench.py first.", "data": {}}
+
+    try:
+        with open(json_files[0], encoding="utf-8") as f:
+            raw = json.load(f)
+    except Exception as e:
+        return {"ok": False, "output": str(e), "data": {}}
+
+    # Aggregate: model -> category -> list of summaries
+    aggregated = {}
+    for entry in raw.get("results", []):
+        model    = entry.get("model", "unknown")
+        category = entry.get("category", "other")
+        summary  = entry.get("summary", {})
+        if not summary:
+            continue
+        aggregated.setdefault(model, {}).setdefault(category, []).append(summary)
+
+    # Compute per-model per-category averages
+    def avg(vals):
+        v = [x for x in vals if x is not None]
+        return round(sum(v) / len(v), 2) if v else None
+
+    models_summary = {}
+    for model, cats in aggregated.items():
+        models_summary[model] = {}
+        for cat, summaries in cats.items():
+            models_summary[model][cat] = {
+                "avg_tokens_per_second":     avg([s.get("avg_tokens_per_second")     for s in summaries]),
+                "avg_time_to_first_token_s": avg([s.get("avg_time_to_first_token_s") for s in summaries]),
+                "avg_total_duration_s":      avg([s.get("avg_total_duration_s")      for s in summaries]),
+                "consistency_score":         avg([s.get("consistency_score")         for s in summaries]),
+                "prompts_run":               len(summaries),
+            }
+
+    return {
+        "ok":        True,
+        "timestamp": raw.get("timestamp", ""),
+        "system":    raw.get("system", {}),
+        "models":    list(raw.get("models", [])),
+        "data":      models_summary,
+    }
+
+
 def ecosystem_status() -> dict:
     projects = load_projects()
     result = {}
@@ -478,6 +535,9 @@ class GitHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/ollama_models":
             self.send_json(get_ollama_models())
+            return
+        if path == "/api/bench_results":
+            self.send_json(get_bench_results())
             return
         if path in ("/api/status", "/api/diff", "/api/log", "/api/branches"):
             name = params.get("project", [""])[0]

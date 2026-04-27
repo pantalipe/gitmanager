@@ -376,7 +376,117 @@
     color: var(--red);
   }
 
-  /* ── SKELETON / LOADING ── */
+  /* ── BENCH SECTION ── */
+  .bench-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bench-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .bench-table thead tr {
+    background: rgba(0,212,255,0.04);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .bench-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+  }
+
+  .bench-table th.right { text-align: right; }
+
+  .bench-table td {
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bench-table td.right { text-align: right; }
+
+  .bench-table tr:last-child td { border-bottom: none; }
+
+  .bench-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .model-name {
+    font-weight: 700;
+    color: #fff;
+    font-size: 12px;
+  }
+
+  .cat-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  .cat-badge.code { color: var(--accent);  border-color: rgba(0,212,255,0.2); }
+  .cat-badge.text { color: var(--purple); border-color: rgba(181,123,255,0.2); }
+
+  .tps-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-bg {
+    width: 60px; height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+
+  .score-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .score-high { background: rgba(0,232,122,0.12); color: var(--green); }
+  .score-mid  { background: rgba(255,199,64,0.12);  color: var(--yellow); }
+  .score-low  { background: rgba(255,77,106,0.12);  color: var(--red); }
+
+  .bench-meta {
+    padding: 10px 16px;
+    font-size: 10px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 20px;
+  }
+
+  .bench-empty {
+    padding: 20px 18px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .bench-empty code {
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
   .skeleton {
     background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
     background-size: 200% 100%;
@@ -587,6 +697,102 @@ function renderModels(modelsData) {
   document.getElementById('main-content').appendChild(section);
 }
 
+function renderBench(bench) {
+  const section = document.createElement('div');
+  section.className = 'layer';
+
+  if (!bench.ok) {
+    section.innerHTML = `
+      <div class="layer-header">
+        <div class="layer-label" style="color:var(--yellow)">ollama bench</div>
+        <div class="layer-line"></div>
+      </div>
+      <div class="bench-section">
+        <div class="bench-empty">
+          No results yet — run <code>python bench.py</code> in ollama-bench to generate data.
+        </div>
+      </div>`;
+    document.getElementById('main-content').appendChild(section);
+    return;
+  }
+
+  // Find max tps across all entries for bar scaling
+  let maxTps = 1;
+  for (const cats of Object.values(bench.data)) {
+    for (const m of Object.values(cats)) {
+      if (m.avg_tokens_per_second > maxTps) maxTps = m.avg_tokens_per_second;
+    }
+  }
+
+  const rows = [];
+  for (const [model, cats] of Object.entries(bench.data)) {
+    for (const [cat, m] of Object.entries(cats)) {
+      const tps      = m.avg_tokens_per_second   != null ? m.avg_tokens_per_second.toFixed(1)   : '—';
+      const ttft     = m.avg_time_to_first_token_s != null ? m.avg_time_to_first_token_s.toFixed(3) : '—';
+      const total    = m.avg_total_duration_s      != null ? m.avg_total_duration_s.toFixed(2)     : '—';
+      const cons     = m.consistency_score         != null ? m.consistency_score                   : null;
+      const barPct   = m.avg_tokens_per_second ? Math.round((m.avg_tokens_per_second / maxTps) * 100) : 0;
+
+      const scoreClass = cons === null ? '' : cons >= 0.9 ? 'score-high' : cons >= 0.6 ? 'score-mid' : 'score-low';
+      const consHtml   = cons !== null
+        ? `<span class="score-pill ${scoreClass}">${cons.toFixed(2)}</span>`
+        : '—';
+
+      rows.push(`
+        <tr>
+          <td>
+            <span class="model-name">${esc(model)}</span>
+            <span class="cat-badge ${esc(cat)}">${esc(cat)}</span>
+          </td>
+          <td class="right">
+            <div class="tps-bar">
+              <span>${tps}</span>
+              <div class="bar-bg"><div class="bar-fill" style="width:${barPct}%"></div></div>
+            </div>
+          </td>
+          <td class="right">${ttft}s</td>
+          <td class="right">${total}s</td>
+          <td class="right">${consHtml}</td>
+          <td class="right" style="color:var(--muted)">${m.prompts_run}</td>
+        </tr>`);
+    }
+  }
+
+  const ts = bench.timestamp ? new Date(bench.timestamp).toLocaleString('pt-BR') : '—';
+  const sys = bench.system || {};
+  const sysStr = [sys.os, sys.ram_total_mb ? sys.ram_total_mb + ' MB RAM' : null,
+                  sys.vram_total_mb ? sys.vram_total_mb + ' MB VRAM' : null]
+    .filter(Boolean).join(' · ');
+
+  section.innerHTML = `
+    <div class="layer-header">
+      <div class="layer-label" style="color:var(--yellow)">ollama bench</div>
+      <div class="layer-line"></div>
+      <div class="layer-count">${Object.keys(bench.data).length} models</div>
+    </div>
+    <div class="bench-section">
+      <table class="bench-table">
+        <thead>
+          <tr>
+            <th>Model / Category</th>
+            <th class="right">tok/s</th>
+            <th class="right">ttft</th>
+            <th class="right">avg duration</th>
+            <th class="right">consistency</th>
+            <th class="right">prompts</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+      <div class="bench-meta">
+        <span>run: ${esc(ts)}</span>
+        ${sysStr ? `<span>${esc(sysStr)}</span>` : ''}
+      </div>
+    </div>`;
+
+  document.getElementById('main-content').appendChild(section);
+}
+
 // ── LOAD ──────────────────────────────────────────────────────
 async function loadAll() {
   const btn = document.getElementById('btn-refresh');
@@ -594,15 +800,17 @@ async function loadAll() {
   btn.textContent = '↻ loading…';
 
   try {
-    const [ecoRes, modRes] = await Promise.all([
+    const [ecoRes, modRes, benchRes] = await Promise.all([
       fetch(`${API_BASE}/api/ecosystem_status`).then(r => r.json()),
       fetch(`${API_BASE}/api/ollama_models`).then(r => r.json()),
+      fetch(`${API_BASE}/api/bench_results`).then(r => r.json()),
     ]);
 
     if (!ecoRes.ok) throw new Error(ecoRes.output ?? 'ecosystem_status failed');
 
     renderAll(ecoRes.projects);
     renderModels(modRes);
+    renderBench(benchRes);
 
     // Ollama pill
     const dot   = document.getElementById('ollama-dot');
