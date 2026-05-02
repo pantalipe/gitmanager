@@ -1,0 +1,6 @@
+{
+  "todos": [
+    { "text": "Example todo item — not started", "done": false },
+    { "text": "Example todo item — completed", "done": true }
+  ]
+}

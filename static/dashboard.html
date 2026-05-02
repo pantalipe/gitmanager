@@ -33,16 +33,12 @@
     overflow-x: hidden;
   }
 
-  /* Scanline overlay */
   body::before {
     content: '';
     position: fixed; inset: 0;
     background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.04) 2px,
-      rgba(0,0,0,0.04) 4px
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
     );
     pointer-events: none;
     z-index: 1000;
@@ -50,178 +46,50 @@
 
   /* ── HEADER ── */
   header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 18px 32px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
     position: sticky; top: 0; z-index: 100;
   }
-
-  .header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-  }
-
-  .logo {
-    font-family: var(--font-head);
-    font-size: 20px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-  }
-
+  .header-left { display: flex; align-items: baseline; gap: 14px; }
+  .logo { font-family: var(--font-head); font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
   .logo span { color: var(--accent); }
-
-  .build-tag {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    border: 1px solid var(--border2);
-    padding: 2px 7px;
-    border-radius: 3px;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .ollama-pill {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-  }
+  .build-tag { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border2); padding: 2px 7px; border-radius: 3px; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .ollama-pill { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
   .dot.offline { background: var(--red); }
-
-  #last-refresh {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .btn-refresh {
-    background: none;
-    border: 1px solid var(--border2);
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    padding: 5px 12px;
-    cursor: pointer;
-    border-radius: 3px;
-    transition: all 0.15s;
-    letter-spacing: 0.5px;
-  }
-  .btn-refresh:hover {
-    background: rgba(0,212,255,0.08);
-    border-color: var(--accent);
-  }
+  #last-refresh { font-size: 11px; color: var(--muted); }
+  .btn-refresh { background: none; border: 1px solid var(--border2); color: var(--accent); font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; cursor: pointer; border-radius: 3px; transition: all 0.15s; letter-spacing: 0.5px; }
+  .btn-refresh:hover { background: rgba(0,212,255,0.08); border-color: var(--accent); }
   .btn-refresh.spinning { opacity: 0.5; pointer-events: none; }
 
   /* ── SUMMARY BAR ── */
-  .summary-bar {
-    display: flex;
-    gap: 1px;
-    padding: 0 32px;
-    background: var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .summary-stat {
-    flex: 1;
-    background: var(--surface);
-    padding: 14px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .summary-stat .val {
-    font-family: var(--font-head);
-    font-size: 26px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1;
-  }
+  .summary-bar { display: flex; gap: 1px; padding: 0 32px; background: var(--border); border-bottom: 1px solid var(--border); }
+  .summary-stat { flex: 1; background: var(--surface); padding: 14px 20px; display: flex; flex-direction: column; gap: 3px; }
+  .summary-stat .val { font-family: var(--font-head); font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
   .summary-stat .val.green  { color: var(--green); }
   .summary-stat .val.yellow { color: var(--yellow); }
   .summary-stat .val.red    { color: var(--red); }
   .summary-stat .val.accent { color: var(--accent); }
-
-  .summary-stat .lbl {
-    font-size: 10px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-  }
+  .summary-stat .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
 
   /* ── LAYERS ── */
-  main {
-    padding: 28px 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .layer {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .layer-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .layer-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2.5px;
-    color: var(--muted);
-  }
-
-  .layer-count {
-    font-size: 10px;
-    color: var(--border2);
-    margin-left: auto;
-  }
-
-  .layer-line {
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* layer accent colors */
-  .layer[data-layer="dev"] .layer-label    { color: var(--accent); }
+  main { padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; }
+  .layer { display: flex; flex-direction: column; gap: 10px; }
+  .layer-header { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .layer-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: var(--muted); }
+  .layer-count { font-size: 10px; color: var(--border2); margin-left: auto; }
+  .layer-line { flex: 1; height: 1px; background: var(--border); }
+  .layer[data-layer="dev"]     .layer-label { color: var(--accent); }
   .layer[data-layer="content"] .layer-label { color: var(--purple); }
-  .layer[data-layer="web3"] .layer-label   { color: var(--yellow); }
-  .layer[data-layer="other"] .layer-label  { color: var(--muted); }
+  .layer[data-layer="web3"]    .layer-label { color: var(--yellow); }
+  .layer[data-layer="other"]   .layer-label { color: var(--muted); }
 
   /* ── PROJECT GRID ── */
-  .project-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 10px;
-  }
+  .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
 
   /* ── PROJECT CARD ── */
   .card {
@@ -229,302 +97,164 @@
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 16px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: flex; flex-direction: column; gap: 10px;
     transition: border-color 0.15s;
     animation: fadeIn 0.3s ease both;
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
   }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
-  .card.health-clean  { border-color: var(--border); }
-  .card.health-clean::before  { background: var(--green); }
-  .card.health-dirty  { border-color: rgba(255,199,64,0.25); }
-  .card.health-dirty::before  { background: var(--yellow); }
-  .card.health-no_git { border-color: var(--border); }
-  .card.health-no_git::before { background: var(--muted); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  /* Top-bar colour driven by score now */
+  .card.score-green::before  { background: var(--green); }
+  .card.score-yellow::before { background: var(--yellow); }
+  .card.score-red::before    { background: var(--red); }
   .card.health-no_path { opacity: 0.45; }
-  .card.health-no_path::before { background: var(--red); }
+  .card:hover { border-color: var(--border2); }
 
-  .card:hover {
-    border-color: var(--border2);
-  }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .card-name { font-weight: 700; font-size: 13px; color: #fff; letter-spacing: 0.3px; }
 
-  .card-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .card-name {
-    font-weight: 700;
-    font-size: 13px;
-    color: #fff;
-    letter-spacing: 0.3px;
-  }
-
-  .semaphore {
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 3px;
-  }
+  /* traffic-light dot — bigger than before, score-driven */
+  .semaphore { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
   .sem-green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
   .sem-yellow { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .sem-red    { background: var(--red);    box-shadow: 0 0 8px var(--red); }
   .sem-grey   { background: var(--muted); }
-  .sem-red    { background: var(--red); box-shadow: 0 0 8px var(--red); }
 
-  .card-desc {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+  .card-desc { font-size: 11px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-  .card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .tag {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 2px;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-    letter-spacing: 0.3px;
-  }
-
+  .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 2px; border: 1px solid var(--border2); color: var(--muted); letter-spacing: 0.3px; }
   .tag.branch { color: var(--accent); border-color: rgba(0,212,255,0.2); }
   .tag.stack  { color: #7a9cc7; border-color: rgba(122,156,199,0.2); }
   .tag.dirty  { color: var(--yellow); border-color: rgba(255,199,64,0.25); }
   .tag.ahead  { color: var(--purple); border-color: rgba(181,123,255,0.25); }
+  .tag.stale  { color: var(--red); border-color: rgba(255,77,106,0.25); }
+  .tag.stale-warn { color: var(--yellow); border-color: rgba(255,199,64,0.25); }
 
-  .card-commit {
-    font-size: 11px;
-    color: var(--muted);
+  /* ── HEALTH SCORE ROW ── */
+  .card-score-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; color: var(--muted);
     border-top: 1px solid var(--border);
     padding-top: 8px;
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
   }
-
-  .commit-time {
-    color: var(--border2);
-    flex-shrink: 0;
-    font-size: 10px;
+  .score-label { font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .score-label.green  { color: var(--green); }
+  .score-label.yellow { color: var(--yellow); }
+  .score-label.red    { color: var(--red); }
+  .score-reasons { display: flex; gap: 6px; flex-wrap: wrap; }
+  .reason-chip {
+    font-size: 9px; padding: 1px 5px; border-radius: 2px;
+    border: 1px solid var(--border2); color: var(--muted);
+    letter-spacing: 0.2px;
   }
+  .reason-chip.warn { color: var(--yellow); border-color: rgba(255,199,64,0.2); }
+  .reason-chip.bad  { color: var(--red);    border-color: rgba(255,77,106,0.2); }
+  .reason-chip.ok   { color: var(--green);  border-color: rgba(0,232,122,0.2); }
 
-  .commit-msg {
-    color: #7a8899;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* ── TODOS SECTION ── */
+  .card-todos { border-top: 1px solid var(--border); padding-top: 8px; }
+  .todos-header {
+    display: flex; align-items: center; gap: 7px;
+    cursor: pointer; user-select: none;
+    font-size: 10px; color: var(--muted); letter-spacing: 0.5px;
   }
-
-  /* ── MODELS SECTION ── */
-  .models-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 16px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .models-title {
-    font-size: 10px;
+  .todos-header:hover { color: var(--text); }
+  .todos-count {
+    font-size: 10px; padding: 1px 6px; border-radius: 10px;
+    background: rgba(255,199,64,0.12); color: var(--yellow);
+    border: 1px solid rgba(255,199,64,0.2);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2.5px;
-    color: var(--green);
   }
-
-  .models-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .todos-count.all-done {
+    background: rgba(0,232,122,0.1); color: var(--green);
+    border-color: rgba(0,232,122,0.2);
   }
-
-  .model-chip {
-    font-size: 11px;
-    padding: 4px 10px;
-    border: 1px solid rgba(0,232,122,0.2);
-    border-radius: 3px;
-    color: var(--green);
-    letter-spacing: 0.3px;
+  .todos-toggle { margin-left: auto; font-size: 10px; opacity: 0.4; }
+  .todos-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .todo-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 11px; color: var(--text); line-height: 1.4;
   }
-
-  .models-offline {
-    font-size: 11px;
-    color: var(--red);
+  .todo-item.done .todo-text { text-decoration: line-through; color: var(--muted); }
+  .todo-check {
+    width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+    border: 1px solid var(--border2); background: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px; transition: all 0.1s;
   }
-
-  /* ── BENCH SECTION ── */
-  .bench-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
+  .todo-check:hover { border-color: var(--accent); }
+  .todo-check.checked { background: var(--green); border-color: var(--green); }
+  .todo-check.checked::after { content: '✓'; font-size: 8px; color: #000; font-weight: 700; }
+  .todo-text { flex: 1; cursor: pointer; }
+  .todo-text:hover { color: #fff; }
+  .todo-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; opacity: 0; padding: 0 2px; }
+  .todo-item:hover .todo-del { opacity: 1; }
+  .todo-del:hover { color: var(--red); }
+  .todos-add { display: flex; gap: 6px; margin-top: 6px; }
+  .todos-input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); font-family: var(--font-mono); font-size: 11px;
+    padding: 4px 8px; border-radius: 2px; outline: none;
   }
-
-  .bench-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
+  .todos-input:focus { border-color: var(--accent); }
+  .todos-input::placeholder { color: var(--muted); }
+  .btn-add-todo {
+    background: none; border: 1px solid var(--border2); color: var(--accent);
+    font-family: var(--font-mono); font-size: 11px; padding: 4px 10px;
+    cursor: pointer; border-radius: 2px; transition: all 0.1s;
   }
+  .btn-add-todo:hover { background: rgba(0,212,255,0.08); }
 
-  .bench-table thead tr {
-    background: rgba(0,212,255,0.04);
-    border-bottom: 1px solid var(--border2);
+  /* ── COMMIT ROW ── */
+  .card-commit {
+    font-size: 11px; color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 8px; display: flex; gap: 8px; align-items: baseline;
   }
+  .commit-time { color: var(--border2); flex-shrink: 0; font-size: 10px; }
+  .commit-msg { color: #7a8899; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .bench-table th {
-    padding: 10px 16px;
-    text-align: left;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-  }
+  /* ── MODELS ── */
+  .models-section { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .models-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: var(--green); }
+  .models-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .model-chip { font-size: 11px; padding: 4px 10px; border: 1px solid rgba(0,232,122,0.2); border-radius: 3px; color: var(--green); letter-spacing: 0.3px; }
+  .models-offline { font-size: 11px; color: var(--red); }
 
+  /* ── BENCH ── */
+  .bench-section { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .bench-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .bench-table thead tr { background: rgba(0,212,255,0.04); border-bottom: 1px solid var(--border2); }
+  .bench-table th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
   .bench-table th.right { text-align: right; }
-
-  .bench-table td {
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-
+  .bench-table td { padding: 9px 16px; border-bottom: 1px solid var(--border); color: var(--text); font-variant-numeric: tabular-nums; }
   .bench-table td.right { text-align: right; }
-
   .bench-table tr:last-child td { border-bottom: none; }
-
   .bench-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .model-name {
-    font-weight: 700;
-    color: #fff;
-    font-size: 12px;
-  }
-
-  .cat-badge {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 2px;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-    margin-left: 4px;
-  }
-  .cat-badge.code { color: var(--accent);  border-color: rgba(0,212,255,0.2); }
+  .model-name { font-weight: 700; color: #fff; font-size: 12px; }
+  .cat-badge { font-size: 10px; padding: 2px 6px; border-radius: 2px; border: 1px solid var(--border2); color: var(--muted); margin-left: 4px; }
+  .cat-badge.code { color: var(--accent); border-color: rgba(0,212,255,0.2); }
   .cat-badge.text { color: var(--purple); border-color: rgba(181,123,255,0.2); }
-
-  .tps-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .bar-bg {
-    width: 60px; height: 4px;
-    background: var(--border2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: var(--accent);
-    transition: width 0.4s ease;
-  }
-
-  .score-pill {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 700;
-  }
+  .tps-bar { display: inline-flex; align-items: center; gap: 8px; }
+  .bar-bg { width: 60px; height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.4s ease; }
+  .score-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
   .score-high { background: rgba(0,232,122,0.12); color: var(--green); }
   .score-mid  { background: rgba(255,199,64,0.12);  color: var(--yellow); }
   .score-low  { background: rgba(255,77,106,0.12);  color: var(--red); }
+  .bench-meta { padding: 10px 16px; font-size: 10px; color: var(--muted); border-top: 1px solid var(--border); display: flex; gap: 20px; }
+  .bench-empty { padding: 20px 18px; font-size: 12px; color: var(--muted); }
+  .bench-empty code { color: var(--accent); font-family: var(--font-mono); }
 
-  .bench-meta {
-    padding: 10px 16px;
-    font-size: 10px;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 20px;
-  }
+  .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 3px; height: 12px; }
 
-  .bench-empty {
-    padding: 20px 18px;
-    font-size: 12px;
-    color: var(--muted);
-  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @keyframes fadeIn  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-  .bench-empty code {
-    color: var(--accent);
-    font-family: var(--font-mono);
-  }
-  .skeleton {
-    background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.2s infinite;
-    border-radius: 3px;
-    height: 12px;
-  }
+  .error-banner { background: rgba(255,77,106,0.08); border: 1px solid rgba(255,77,106,0.3); border-radius: 4px; padding: 14px 18px; color: var(--red); font-size: 12px; }
 
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── ERROR STATE ── */
-  .error-banner {
-    background: rgba(255,77,106,0.08);
-    border: 1px solid rgba(255,77,106,0.3);
-    border-radius: 4px;
-    padding: 14px 18px;
-    color: var(--red);
-    font-size: 12px;
-  }
-
-  /* ── FOOTER ── */
-  footer {
-    padding: 16px 32px;
-    border-top: 1px solid var(--border);
-    font-size: 10px;
-    color: var(--border2);
-    display: flex;
-    justify-content: space-between;
-    letter-spacing: 0.5px;
-  }
+  footer { padding: 16px 32px; border-top: 1px solid var(--border); font-size: 10px; color: var(--border2); display: flex; justify-content: space-between; letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -545,11 +275,11 @@
 </header>
 
 <div class="summary-bar" id="summary-bar">
-  <div class="summary-stat"><div class="val accent" id="s-total">—</div><div class="lbl">Projects</div></div>
-  <div class="summary-stat"><div class="val green"  id="s-clean">—</div><div class="lbl">Clean</div></div>
-  <div class="summary-stat"><div class="val yellow" id="s-dirty">—</div><div class="lbl">Dirty</div></div>
-  <div class="summary-stat"><div class="val red"    id="s-missing">—</div><div class="lbl">Missing</div></div>
-  <div class="summary-stat"><div class="val"        id="s-ahead">—</div><div class="lbl">Ahead of remote</div></div>
+  <div class="summary-stat"><div class="val accent"  id="s-total">—</div><div class="lbl">Projects</div></div>
+  <div class="summary-stat"><div class="val green"   id="s-green">—</div><div class="lbl">Healthy</div></div>
+  <div class="summary-stat"><div class="val yellow"  id="s-yellow">—</div><div class="lbl">Needs attention</div></div>
+  <div class="summary-stat"><div class="val red"     id="s-red">—</div><div class="lbl">At risk</div></div>
+  <div class="summary-stat"><div class="val"         id="s-todos">—</div><div class="lbl">Open todos</div></div>
 </div>
 
 <main id="main-content">
@@ -564,21 +294,22 @@
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
 const API_BASE    = 'http://localhost:8765';
-const AUTO_RELOAD = 30_000; // 30s
+const AUTO_RELOAD = 30_000;
 
-// Layer grouping: project name fragments -> layer key
 const LAYER_MAP = {
   dev:     ['gitmanager', 'pandagent', 'ollama-bench'],
   content: ['rotman', 'conduler'],
   web3:    ['pandapoints', 'pp-testenv'],
 };
-
 const LAYER_LABELS = {
   dev:     '① dev tooling',
   content: '② content pipeline',
   web3:    '③ web3 product',
   other:   '④ other',
 };
+
+// In-memory todo state: projectName -> todos array
+const _todoState = {};
 
 // ── UTILS ─────────────────────────────────────────────────────
 function layerFor(name) {
@@ -588,12 +319,8 @@ function layerFor(name) {
   return 'other';
 }
 
-function semClass(health) {
-  return { clean: 'sem-green', dirty: 'sem-yellow', no_git: 'sem-grey', no_path: 'sem-red' }[health] ?? 'sem-grey';
-}
-
-function cardClass(health) {
-  return `card health-${health}`;
+function semClass(score) {
+  return { green: 'sem-green', yellow: 'sem-yellow', red: 'sem-red' }[score] ?? 'sem-grey';
 }
 
 function nowStr() {
@@ -604,67 +331,206 @@ function esc(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function staleLabel(days) {
+  if (days === null || days === undefined) return null;
+  if (days < 1)  return null; // committed today, no label needed
+  if (days < 7)  return { text: `${Math.round(days)}d ago`, cls: '' };
+  if (days < 30) return { text: `${Math.round(days)}d ago`, cls: 'stale-warn' };
+  return { text: `${Math.round(days)}d ago`, cls: 'stale' };
+}
+
+function scoreReasons(p) {
+  const chips = [];
+  const days = p.days_since_commit;
+
+  if (p.health === 'no_path') {
+    chips.push({ text: 'path missing', cls: 'bad' });
+    return chips;
+  }
+  if (p.health === 'no_git') {
+    chips.push({ text: 'no git', cls: 'bad' });
+  }
+  if (days !== null && days !== undefined) {
+    if (days > 30) chips.push({ text: `stale ${Math.round(days)}d`, cls: 'bad' });
+    else if (days > 7) chips.push({ text: `${Math.round(days)}d inactive`, cls: 'warn' });
+    else chips.push({ text: `active`, cls: 'ok' });
+  }
+  if (p.health === 'dirty') chips.push({ text: `${p.changed_files} uncommitted`, cls: 'warn' });
+  else if (p.health === 'clean' && chips.length === 0) chips.push({ text: 'clean', cls: 'ok' });
+  if (p.open_todo_count > 0) chips.push({ text: `${p.open_todo_count} todo${p.open_todo_count > 1 ? 's' : ''}`, cls: p.open_todo_count >= 5 ? 'bad' : 'warn' });
+  return chips;
+}
+
+// ── TODO OPS ──────────────────────────────────────────────────
+async function saveTodos(projectName) {
+  const todos = _todoState[projectName] || [];
+  try {
+    await fetch(`${API_BASE}/api/save_todos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project: projectName, todos }),
+    });
+  } catch(e) { /* silent */ }
+}
+
+function toggleTodo(projectName, idx) {
+  const todos = _todoState[projectName];
+  if (!todos || !todos[idx]) return;
+  todos[idx].done = !todos[idx].done;
+  saveTodos(projectName);
+  rerenderTodos(projectName);
+}
+
+function deleteTodo(projectName, idx) {
+  const todos = _todoState[projectName];
+  if (!todos) return;
+  todos.splice(idx, 1);
+  saveTodos(projectName);
+  rerenderTodos(projectName);
+}
+
+function addTodo(projectName, inputEl) {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  if (!_todoState[projectName]) _todoState[projectName] = [];
+  _todoState[projectName].push({ text, done: false });
+  inputEl.value = '';
+  saveTodos(projectName);
+  rerenderTodos(projectName);
+}
+
+function rerenderTodos(projectName) {
+  const container = document.getElementById(`todos-${CSS.escape(projectName)}`);
+  if (!container) return;
+  const todos = _todoState[projectName] || [];
+  const open  = todos.filter(t => !t.done).length;
+  // Update count badge
+  const countEl = container.querySelector('.todos-count');
+  if (countEl) {
+    countEl.textContent = open > 0 ? open : '✓';
+    countEl.className = 'todos-count' + (open === 0 ? ' all-done' : '');
+  }
+  // Rebuild list
+  const listEl = container.querySelector('.todos-list');
+  if (listEl) listEl.innerHTML = buildTodoItems(projectName, todos);
+}
+
+function buildTodoItems(projectName, todos) {
+  if (!todos.length) return '<div style="font-size:11px;color:var(--muted);padding:2px 0">no todos — add one below</div>';
+  return todos.map((t, i) => `
+    <div class="todo-item${t.done ? ' done' : ''}">
+      <div class="todo-check${t.done ? ' checked' : ''}" onclick="toggleTodo('${esc(projectName)}', ${i})"></div>
+      <span class="todo-text" onclick="toggleTodo('${esc(projectName)}', ${i})">${esc(t.text)}</span>
+      <button class="todo-del" onclick="deleteTodo('${esc(projectName)}', ${i})" title="remove">✕</button>
+    </div>`).join('');
+}
+
+function toggleTodosPanel(projectName) {
+  const container = document.getElementById(`todos-${CSS.escape(projectName)}`);
+  if (!container) return;
+  const list = container.querySelector('.todos-body');
+  if (!list) return;
+  const isHidden = list.style.display === 'none' || list.style.display === '';
+  list.style.display = isHidden ? 'block' : 'none';
+  const toggleEl = container.querySelector('.todos-toggle');
+  if (toggleEl) toggleEl.textContent = isHidden ? '▲' : '▼';
+}
+
 // ── CARD RENDER ───────────────────────────────────────────────
 function renderCard(name, p) {
-  const stacks  = (p.stack || []).map(s => `<span class="tag stack">${esc(s)}</span>`).join('');
-  const branch  = p.branch  ? `<span class="tag branch">⎇ ${esc(p.branch)}</span>` : '';
-  const dirty   = p.changed_files > 0 ? `<span class="tag dirty">${p.changed_files} changed</span>` : '';
-  const ahead   = p.ahead   ? `<span class="tag ahead">↑${p.ahead}</span>` : '';
+  // Store todos in memory
+  _todoState[name] = p.todos || [];
+
+  const score    = p.score || 'red';
+  const stacks   = (p.stack || []).map(s => `<span class="tag stack">${esc(s)}</span>`).join('');
+  const branch   = p.branch ? `<span class="tag branch">⎇ ${esc(p.branch)}</span>` : '';
+  const dirty    = p.changed_files > 0 ? `<span class="tag dirty">${p.changed_files} changed</span>` : '';
+  const ahead    = p.ahead ? `<span class="tag ahead">↑${p.ahead}</span>` : '';
+  const noPath   = !p.path_exists ? '<span class="tag" style="color:var(--red)">path missing</span>' : '';
+  const noGit    = p.path_exists && p.health === 'no_git' ? '<span class="tag">no git</span>' : '';
+
+  const stale = staleLabel(p.days_since_commit);
+  const staleTag = stale ? `<span class="tag ${stale.cls}">${stale.text}</span>` : '';
+
   const commitRow = (p.last_commit && p.last_message)
     ? `<div class="card-commit">
          <span class="commit-time">${esc(p.last_commit)}</span>
          <span class="commit-msg">${esc(p.last_message)}</span>
        </div>`
     : '';
-  const noPath  = !p.path_exists ? '<span class="tag" style="color:var(--red)">path missing</span>' : '';
-  const noGit   = p.path_exists && p.health === 'no_git' ? '<span class="tag">no git</span>' : '';
+
+  // Score row
+  const reasons = scoreReasons(p);
+  const reasonChips = reasons.map(r => `<span class="reason-chip ${r.cls}">${esc(r.text)}</span>`).join('');
+  const scoreRow = `
+    <div class="card-score-row">
+      <span class="score-label ${score}">${score}</span>
+      <div class="score-reasons">${reasonChips}</div>
+    </div>`;
+
+  // Todos section
+  const todos    = p.todos || [];
+  const open     = todos.filter(t => !t.done).length;
+  const safeId   = CSS.escape(name);
+  const todosSection = `
+    <div class="card-todos" id="todos-${safeId}">
+      <div class="todos-header" onclick="toggleTodosPanel('${esc(name)}')">
+        <span>todos</span>
+        <span class="todos-count${open === 0 && todos.length > 0 ? ' all-done' : ''}">${open > 0 ? open : (todos.length > 0 ? '✓' : '0')}</span>
+        <span class="todos-toggle">▼</span>
+      </div>
+      <div class="todos-body" style="display:none">
+        <div class="todos-list">${buildTodoItems(name, todos)}</div>
+        <div class="todos-add">
+          <input class="todos-input" placeholder="add todo…"
+            onkeydown="if(event.key==='Enter') addTodo('${esc(name)}', this)"
+            id="todo-input-${safeId}">
+          <button class="btn-add-todo" onclick="addTodo('${esc(name)}', document.getElementById('todo-input-${safeId}'))">+</button>
+        </div>
+      </div>
+    </div>`;
 
   return `
-    <div class="${cardClass(p.health)}">
+    <div class="card score-${score}">
       <div class="card-top">
         <div class="card-name">${esc(name)}</div>
-        <div class="semaphore ${semClass(p.health)}"></div>
+        <div class="semaphore ${semClass(score)}"></div>
       </div>
       ${p.description ? `<div class="card-desc">${esc(p.description)}</div>` : ''}
       <div class="card-meta">
-        ${branch}${dirty}${ahead}${stacks}${noPath}${noGit}
+        ${branch}${staleTag}${dirty}${ahead}${stacks}${noPath}${noGit}
       </div>
+      ${scoreRow}
+      ${todosSection}
       ${commitRow}
     </div>`;
 }
 
 // ── MAIN RENDER ───────────────────────────────────────────────
 function renderAll(projects) {
-  // Group by layer
   const layers = { dev: {}, content: {}, web3: {}, other: {} };
-  let total = 0, clean = 0, dirty = 0, missing = 0, aheadCount = 0;
+  let total = 0, green = 0, yellow = 0, red = 0, totalOpenTodos = 0;
 
   for (const [name, p] of Object.entries(projects)) {
     layers[layerFor(name)][name] = p;
     total++;
-    if (p.health === 'clean')   clean++;
-    if (p.health === 'dirty')   dirty++;
-    if (!p.path_exists)         missing++;
-    if (p.ahead)                aheadCount++;
+    if (p.score === 'green')  green++;
+    if (p.score === 'yellow') yellow++;
+    if (p.score === 'red')    red++;
+    totalOpenTodos += (p.open_todo_count || 0);
   }
 
-  // Summary
-  document.getElementById('s-total').textContent   = total;
-  document.getElementById('s-clean').textContent   = clean;
-  document.getElementById('s-dirty').textContent   = dirty;
-  document.getElementById('s-missing').textContent = missing;
-  document.getElementById('s-ahead').textContent   = aheadCount;
+  document.getElementById('s-total').textContent  = total;
+  document.getElementById('s-green').textContent  = green;
+  document.getElementById('s-yellow').textContent = yellow;
+  document.getElementById('s-red').textContent    = red;
+  document.getElementById('s-todos').textContent  = totalOpenTodos;
 
-  // Build HTML
   let html = '';
   for (const [layerKey, label] of Object.entries(LAYER_LABELS)) {
     const group = layers[layerKey];
     if (Object.keys(group).length === 0) continue;
-
-    const cards = Object.entries(group)
-      .map(([name, p]) => renderCard(name, p))
-      .join('');
-
+    const cards = Object.entries(group).map(([n, p]) => renderCard(n, p)).join('');
     html += `
       <div class="layer" data-layer="${layerKey}">
         <div class="layer-header">
@@ -680,7 +546,6 @@ function renderAll(projects) {
 }
 
 function renderModels(modelsData) {
-  // Inject models block at bottom of main
   const section = document.createElement('div');
   section.className = 'layer';
   section.innerHTML = `
@@ -708,15 +573,12 @@ function renderBench(bench) {
         <div class="layer-line"></div>
       </div>
       <div class="bench-section">
-        <div class="bench-empty">
-          No results yet — run <code>python bench.py</code> in ollama-bench to generate data.
-        </div>
+        <div class="bench-empty">No results yet — run <code>python bench.py</code> in ollama-bench to generate data.</div>
       </div>`;
     document.getElementById('main-content').appendChild(section);
     return;
   }
 
-  // Find max tps across all entries for bar scaling
   let maxTps = 1;
   for (const cats of Object.values(bench.data)) {
     for (const m of Object.values(cats)) {
@@ -727,29 +589,17 @@ function renderBench(bench) {
   const rows = [];
   for (const [model, cats] of Object.entries(bench.data)) {
     for (const [cat, m] of Object.entries(cats)) {
-      const tps      = m.avg_tokens_per_second   != null ? m.avg_tokens_per_second.toFixed(1)   : '—';
-      const ttft     = m.avg_time_to_first_token_s != null ? m.avg_time_to_first_token_s.toFixed(3) : '—';
-      const total    = m.avg_total_duration_s      != null ? m.avg_total_duration_s.toFixed(2)     : '—';
-      const cons     = m.consistency_score         != null ? m.consistency_score                   : null;
-      const barPct   = m.avg_tokens_per_second ? Math.round((m.avg_tokens_per_second / maxTps) * 100) : 0;
-
+      const tps    = m.avg_tokens_per_second   != null ? m.avg_tokens_per_second.toFixed(1)   : '—';
+      const ttft   = m.avg_time_to_first_token_s != null ? m.avg_time_to_first_token_s.toFixed(3) : '—';
+      const total  = m.avg_total_duration_s      != null ? m.avg_total_duration_s.toFixed(2)     : '—';
+      const cons   = m.consistency_score         != null ? m.consistency_score : null;
+      const barPct = m.avg_tokens_per_second ? Math.round((m.avg_tokens_per_second / maxTps) * 100) : 0;
       const scoreClass = cons === null ? '' : cons >= 0.9 ? 'score-high' : cons >= 0.6 ? 'score-mid' : 'score-low';
-      const consHtml   = cons !== null
-        ? `<span class="score-pill ${scoreClass}">${cons.toFixed(2)}</span>`
-        : '—';
-
+      const consHtml = cons !== null ? `<span class="score-pill ${scoreClass}">${cons.toFixed(2)}</span>` : '—';
       rows.push(`
         <tr>
-          <td>
-            <span class="model-name">${esc(model)}</span>
-            <span class="cat-badge ${esc(cat)}">${esc(cat)}</span>
-          </td>
-          <td class="right">
-            <div class="tps-bar">
-              <span>${tps}</span>
-              <div class="bar-bg"><div class="bar-fill" style="width:${barPct}%"></div></div>
-            </div>
-          </td>
+          <td><span class="model-name">${esc(model)}</span><span class="cat-badge ${esc(cat)}">${esc(cat)}</span></td>
+          <td class="right"><div class="tps-bar"><span>${tps}</span><div class="bar-bg"><div class="bar-fill" style="width:${barPct}%"></div></div></div></td>
           <td class="right">${ttft}s</td>
           <td class="right">${total}s</td>
           <td class="right">${consHtml}</td>
@@ -758,11 +608,10 @@ function renderBench(bench) {
     }
   }
 
-  const ts = bench.timestamp ? new Date(bench.timestamp).toLocaleString('pt-BR') : '—';
+  const ts  = bench.timestamp ? new Date(bench.timestamp).toLocaleString('pt-BR') : '—';
   const sys = bench.system || {};
   const sysStr = [sys.os, sys.ram_total_mb ? sys.ram_total_mb + ' MB RAM' : null,
-                  sys.vram_total_mb ? sys.vram_total_mb + ' MB VRAM' : null]
-    .filter(Boolean).join(' · ');
+                  sys.vram_total_mb ? sys.vram_total_mb + ' MB VRAM' : null].filter(Boolean).join(' · ');
 
   section.innerHTML = `
     <div class="layer-header">
@@ -772,16 +621,11 @@ function renderBench(bench) {
     </div>
     <div class="bench-section">
       <table class="bench-table">
-        <thead>
-          <tr>
-            <th>Model / Category</th>
-            <th class="right">tok/s</th>
-            <th class="right">ttft</th>
-            <th class="right">avg duration</th>
-            <th class="right">consistency</th>
-            <th class="right">prompts</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Model / Category</th><th class="right">tok/s</th>
+          <th class="right">ttft</th><th class="right">avg duration</th>
+          <th class="right">consistency</th><th class="right">prompts</th>
+        </tr></thead>
         <tbody>${rows.join('')}</tbody>
       </table>
       <div class="bench-meta">
@@ -812,14 +656,13 @@ async function loadAll() {
     renderModels(modRes);
     renderBench(benchRes);
 
-    // Ollama pill
     const dot   = document.getElementById('ollama-dot');
     const label = document.getElementById('ollama-label');
     if (modRes.ok && modRes.models.length > 0) {
-      dot.className   = 'dot online';
+      dot.className     = 'dot online';
       label.textContent = `ollama · ${modRes.models.length} models`;
     } else {
-      dot.className   = 'dot offline';
+      dot.className     = 'dot offline';
       label.textContent = 'ollama offline';
     }
 
@@ -833,14 +676,13 @@ async function loadAll() {
         ✗ Could not reach gitmanager at ${API_BASE}<br>
         <small style="opacity:.6">Make sure <code>python server.py</code> is running in the gitmanager folder.</small>
       </div>`;
-    document.getElementById('ollama-dot').className  = 'dot offline';
+    document.getElementById('ollama-dot').className = 'dot offline';
   } finally {
     btn.classList.remove('spinning');
     btn.textContent = '↻ refresh';
   }
 }
 
-// ── BOOT ──────────────────────────────────────────────────────
 loadAll();
 setInterval(loadAll, AUTO_RELOAD);
 </script>

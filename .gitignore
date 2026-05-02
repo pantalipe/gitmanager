@@ -1,6 +1,9 @@
 # Project registry — contains local paths, keep private
 projects.json
 
+# Centralised per-project todo lists — local only
+todos/
+
 # Python
 __pycache__/
 *.py[cod]

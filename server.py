@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -30,8 +31,9 @@ except ImportError:
     _PANDA_AVAILABLE = False
 
 PROJECTS_FILE = Path(__file__).parent / "projects.json"
-PORT = 8765
-STATIC_DIR = Path(__file__).parent / "static"
+TODOS_DIR     = Path(__file__).parent / "todos"
+PORT          = 8765
+STATIC_DIR    = Path(__file__).parent / "static"
 
 
 # ─────────────────────────────────────────────
@@ -177,7 +179,6 @@ def get_bench_results() -> dict:
         return {"ok": False, "output": "ollama-bench/results not found", "data": {}}
 
     json_files = sorted(bench_dir.glob("*.json"), reverse=True)
-    # Filter out .gitkeep and non-JSON
     json_files = [f for f in json_files if f.suffix == ".json" and f.stem != ".gitkeep"]
     if not json_files:
         return {"ok": False, "output": "No bench results found. Run bench.py first.", "data": {}}
@@ -188,7 +189,6 @@ def get_bench_results() -> dict:
     except Exception as e:
         return {"ok": False, "output": str(e), "data": {}}
 
-    # Aggregate: model -> category -> list of summaries
     aggregated = {}
     for entry in raw.get("results", []):
         model    = entry.get("model", "unknown")
@@ -198,7 +198,6 @@ def get_bench_results() -> dict:
             continue
         aggregated.setdefault(model, {}).setdefault(category, []).append(summary)
 
-    # Compute per-model per-category averages
     def avg(vals):
         v = [x for x in vals if x is not None]
         return round(sum(v) / len(v), 2) if v else None
@@ -224,6 +223,88 @@ def get_bench_results() -> dict:
     }
 
 
+# ─────────────────────────────────────────────
+# HEALTH SCORING HELPERS
+# ─────────────────────────────────────────────
+
+def _get_commit_days(path: str) -> float | None:
+    """Returns days since the last commit, or None if no commits or no git."""
+    result = run_git(path, ["log", "-1", "--format=%ct"])
+    if not result["ok"]:
+        return None
+    raw = result["output"].strip()
+    if not raw or raw == "(no output)":
+        return None
+    try:
+        ts = int(raw)
+        return (time.time() - ts) / 86400.0
+    except ValueError:
+        return None
+
+
+def _read_todos(project_name: str) -> list[dict]:
+    """
+    Reads todos from gitmanager/todos/{project_name}.json.
+    Centralised in gitmanager — never touches the project directories.
+    Returns [] if file absent or malformed.
+    """
+    todo_path = TODOS_DIR / f"{project_name}.json"
+    if not todo_path.exists():
+        return []
+    try:
+        data = json.loads(todo_path.read_text(encoding="utf-8"))
+        todos = data.get("todos", [])
+        normalised = []
+        for item in todos:
+            if isinstance(item, str):
+                normalised.append({"text": item, "done": False})
+            elif isinstance(item, dict):
+                normalised.append({
+                    "text": str(item.get("text", "")),
+                    "done": bool(item.get("done", False)),
+                })
+        return normalised
+    except Exception:
+        return []
+
+
+def _save_todos(project_name: str, todos: list[dict]) -> dict:
+    """Writes todos to gitmanager/todos/{project_name}.json."""
+    TODOS_DIR.mkdir(exist_ok=True)
+    todo_path = TODOS_DIR / f"{project_name}.json"
+    try:
+        todo_path.write_text(
+            json.dumps({"todos": todos}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return {"ok": True, "output": f"todos/{project_name}.json saved."}
+    except Exception as e:
+        return {"ok": False, "output": str(e)}
+
+
+def _compute_score(days_since_commit: float | None, open_todos: int, health: str) -> str:
+    """
+    Traffic-light health score for a project.
+
+    RED    — path/git missing, or stale > 30 days, or 5+ open todos
+    YELLOW — dirty working tree, or stale 7-30 days, or 1-4 open todos
+    GREEN  — clean, committed < 7 days ago, 0 open todos
+    """
+    if health in ("no_path", "no_git"):
+        return "red"
+    if days_since_commit is not None and days_since_commit > 30:
+        return "red"
+    if open_todos >= 5:
+        return "red"
+    if health == "dirty":
+        return "yellow"
+    if days_since_commit is not None and days_since_commit > 7:
+        return "yellow"
+    if open_todos >= 1:
+        return "yellow"
+    return "green"
+
+
 def ecosystem_status() -> dict:
     projects = load_projects()
     result = {}
@@ -233,7 +314,13 @@ def ecosystem_status() -> dict:
             "name": name, "description": cfg.get("description", ""),
             "type": cfg.get("type", "other"), "stack": cfg.get("stack", []),
             "path_exists": False, "branch": None, "changed_files": 0,
-            "last_commit": None, "last_message": None, "ahead": None, "health": "no_path",
+            "last_commit": None, "last_message": None, "ahead": None,
+            "health": "no_path",
+            "days_since_commit": None,
+            "todos": [],
+            "todo_count": 0,
+            "open_todo_count": 0,
+            "score": "red",
         }
         if not path or not Path(path).exists():
             result[name] = entry
@@ -241,6 +328,12 @@ def ecosystem_status() -> dict:
         entry["path_exists"] = True
         if not (Path(path) / ".git").exists():
             entry["health"] = "no_git"
+            todos = _read_todos(name)
+            open_todos = sum(1 for t in todos if not t["done"])
+            entry["todos"] = todos
+            entry["todo_count"] = len(todos)
+            entry["open_todo_count"] = open_todos
+            entry["score"] = _compute_score(None, open_todos, "no_git")
             result[name] = entry
             continue
         status_r = run_git(path, ["status", "--short", "--branch"])
@@ -260,6 +353,18 @@ def ecosystem_status() -> dict:
             entry["last_commit"]  = parts[0].strip() if parts else None
             entry["last_message"] = parts[1].strip() if len(parts) > 1 else None
         entry["health"] = "dirty" if entry["changed_files"] > 0 else "clean"
+
+        days = _get_commit_days(path)
+        entry["days_since_commit"] = round(days, 1) if days is not None else None
+
+        todos = _read_todos(name)
+        open_todos = sum(1 for t in todos if not t["done"])
+        entry["todos"] = todos
+        entry["todo_count"] = len(todos)
+        entry["open_todo_count"] = open_todos
+
+        entry["score"] = _compute_score(days, open_todos, entry["health"])
+
         result[name] = entry
     return {"ok": True, "projects": result}
 
@@ -539,6 +644,13 @@ class GitHandler(BaseHTTPRequestHandler):
         if path == "/api/bench_results":
             self.send_json(get_bench_results())
             return
+        if path == "/api/todos":
+            name = params.get("project", [""])[0]
+            if name not in load_projects():
+                self.send_json({"ok": False, "output": "Projeto nao encontrado"}, 404)
+                return
+            self.send_json({"ok": True, "todos": _read_todos(name)})
+            return
         if path in ("/api/status", "/api/diff", "/api/log", "/api/branches"):
             name = params.get("project", [""])[0]
             projects = load_projects()
@@ -724,6 +836,27 @@ class GitHandler(BaseHTTPRequestHandler):
                 project_cfg=projects.get(name, {}),
             ))
             return
+        if path == "/api/save_todos":
+            _, name = get_proj(body)
+            if name not in projects:
+                self.send_json({"ok": False, "output": f"Projeto '{name}' nao encontrado"}, 404)
+                return
+            todos = body.get("todos", [])
+            if not isinstance(todos, list):
+                self.send_json({"ok": False, "output": "todos must be a list"})
+                return
+            normalised = []
+            for item in todos:
+                if isinstance(item, str):
+                    normalised.append({"text": item, "done": False})
+                elif isinstance(item, dict):
+                    normalised.append({
+                        "text": str(item.get("text", "")).strip(),
+                        "done": bool(item.get("done", False)),
+                    })
+            normalised = [t for t in normalised if t["text"]]
+            self.send_json(_save_todos(name, normalised))
+            return
         self.send_json({"ok": False, "output": "Rota nao encontrada"}, 404)
 
 
@@ -732,10 +865,12 @@ class GitHandler(BaseHTTPRequestHandler):
 # ─────────────────────────────────────────────
 def main():
     STATIC_DIR.mkdir(exist_ok=True)
+    TODOS_DIR.mkdir(exist_ok=True)
     print(f"Panda Git Manager")
     print(f"   http://localhost:{PORT}")
     print(f"   dashboard: http://localhost:{PORT}/dashboard")
     print(f"   PandaClient: {'loaded' if _PANDA_AVAILABLE else 'not found (fallback mode)'}")
+    print(f"   todos dir:  {TODOS_DIR}")
     print()
     projects = load_projects()
     print(f"   {len(projects)} projetos carregados:")
