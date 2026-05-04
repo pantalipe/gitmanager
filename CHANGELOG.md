@@ -6,41 +6,13 @@ All notable changes to gitmanager are documented here.
 
 ## [Unreleased]
 
-### Added
-- **Ecosystem Status View** — new "⬡ Ecosystem" tab in the header with a card grid
-  showing git health for all projects at a glance
-  - Per-project semaphore: `clean` (green), `dirty` (yellow), `no_git` (grey), `no_path` (red)
-  - Cards grouped by ecosystem layer (Dev Tooling / Content Pipeline / Web3 Product)
-  - Each card shows: branch, changed file count, commits ahead of remote, stack tags,
-    last commit time and message
-  - Clicking any card navigates directly to that project in the Projects view
-  - Stats bar with total counts per health state
-  - `GET /api/ecosystem_status` endpoint powering the view
-- **PandaClient integration** — `server.py` now imports `panda_client.py` from
-  `../pandagent` as the single point of contact with Ollama
-  - `suggest_commit_message()` delegates to `_panda.commit_message()`
-  - `generate_readme()` delegates to `_panda.generate_readme()`
-  - `get_ollama_models()` delegates to `_panda.available_models()`
-  - Graceful fallback to direct Ollama urllib calls if pandagent is not found;
-    startup log reports `PandaClient: loaded` or `not found (fallback mode)`
-- **Project context in commit prompts** — `suggest_commit_message()` now accepts
-  `project_name` and `project_cfg` and injects project metadata (name, description,
-  purpose, tech stack) as structured background context into the LLM prompt
-- `_build_project_context()` — builds bracket-notation context block from
-  `projects.json` metadata to prevent verbatim reproduction in model output
-- `_clean_commit()` — post-processing cleaner that extracts the first valid
-  conventional commit line, strips leaked context, issue references (`#`) and
-  markdown artifacts
-- `_clean_markdown_fences()` — strips ` ```markdown ` fences from README output
+---
+
+## [2.2] — 2026-05-04
 
 ### Changed
-- `suggest_commit_message()` passes `project_name` to `_panda.commit_message()`
-  for explicit scope enforcement (model instructed to use project name as scope)
-- `_COMMIT_LEAK_MARKERS` in fallback `_clean_commit()` expanded to include
-  `status:`, `stack:`, `objective:`, `description:`, sentence-continuation
-  patterns and ` #` issue references
-- Fallback `suggest_commit_message()` prompt updated to match panda_client format:
-  `### git status`, `### git diff`, `### project context` sections
+- `server.py` migrated from `sys.path` import to `from pandagent import PandaClient`
+  — requires `pip install -e ../pandagent` instead of path manipulation
 
 ---
 

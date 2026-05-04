@@ -49,9 +49,10 @@ No `pip install` required.
 ## LLM integration
 
 LLM features (commit suggestions, README generation, model listing) are handled by
-`panda_client.py` from [pandagent](https://github.com/pantalipe/pandagent), imported
-at startup via `sys.path`. If pandagent is not found at `../pandagent`, the server falls
-back to direct Ollama urllib calls automatically — no configuration needed.
+[pandagent](https://github.com/pantalipe/pandagent), imported as an installable package.
+Install it once with `pip install -e ../pandagent` and the integration is automatic.
+If pandagent is not installed, the server falls back to direct Ollama urllib calls —
+no configuration needed.
 
 Commit message suggestions are context-aware: the project's `description`, `objective`
 and `stack` from `projects.json` are injected into the prompt so the model generates
