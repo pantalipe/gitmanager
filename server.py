@@ -19,12 +19,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 # ── PandaClient (shared LLM module) ─────────────────────────────────────────
-_PANDAGENT_PATH = str(Path(__file__).parent.parent / "pandagent")
-if _PANDAGENT_PATH not in sys.path:
-    sys.path.insert(0, _PANDAGENT_PATH)
-
 try:
-    from panda_client import PandaClient
+    from pandagent import PandaClient
     _panda = PandaClient()
     _PANDA_AVAILABLE = True
 except ImportError:
