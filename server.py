@@ -26,6 +26,8 @@ try:
 except ImportError:
     _PANDA_AVAILABLE = False
 
+LLM_BASE_URL  = "http://127.0.0.1:8080"   # llama-swap / llama-server (OpenAI-compatible)
+
 PROJECTS_FILE = Path(__file__).parent / "projects.json"
 TODOS_DIR     = Path(__file__).parent / "todos"
 PORT          = 8765
@@ -145,7 +147,7 @@ def git_commit(path: str, message: str) -> dict:
     return run_git(path, ["commit", "-m", message])
 
 def git_diff_staged(path: str) -> dict:
-    staged = run_git(path, ["diff", "--cached"])
+    staged = run_git(path, ["cached"])
     if staged["ok"] and staged["output"] and staged["output"] != "(no output)":
         return staged
     return run_git(path, ["diff"])
@@ -155,14 +157,15 @@ def get_ollama_models() -> dict:
         models = _panda.available_models()
         if models:
             return {"ok": True, "models": models}
-        return {"ok": False, "models": [], "output": "Ollama unavailable."}
+        return {"ok": False, "models": [], "output": "LLM server unavailable."}
+    # Fallback: query the OpenAI-compatible /v1/models endpoint directly
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/tags", method="GET")
+        req = urllib.request.Request(f"{LLM_BASE_URL}/v1/models", method="GET")
         with urllib.request.urlopen(req, timeout=10) as resp:
             result = json.loads(resp.read().decode("utf-8"))
-            return {"ok": True, "models": [m["name"] for m in result.get("models", [])]}
+            return {"ok": True, "models": [m["id"] for m in result.get("data", [])]}
     except Exception as e:
-        return {"ok": False, "models": [], "output": f"Ollama unavailable: {e}"}
+        return {"ok": False, "models": [], "output": f"LLM server unavailable: {e}"}
 
 
 def get_bench_results() -> dict:
@@ -406,6 +409,30 @@ def save_readme(path: str, content: str) -> dict:
         return {'ok': False, 'output': str(e)}
 
 
+def _llm_chat(prompt: str, model: str, max_tokens: int = 1024) -> str:
+    """
+    Minimal fallback LLM call using the OpenAI-compatible /v1/chat/completions endpoint.
+    Used only when PandaClient is unavailable.
+    Returns the assistant message content, or raises on error.
+    """
+    payload = json.dumps({
+        "model":      model,
+        "messages":   [{"role": "user", "content": prompt}],
+        "stream":     False,
+        "max_tokens": max_tokens,
+        "temperature": 0.2,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{LLM_BASE_URL}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=None) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        return data["choices"][0]["message"]["content"].strip()
+
+
 def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
     structure = scan_project_structure(path)
     if _PANDA_AVAILABLE:
@@ -426,17 +453,13 @@ def generate_readme(path: str, project_cfg: dict, model: str = "phi3") -> dict:
         f"Objective: {project_cfg.get('objective','')}\nStack: {', '.join(project_cfg.get('stack',[]))}\n"
         f"Status: {project_cfg.get('status','')}\n\nFile structure:\n{structure}"
     )
-    payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
-                                     headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=None) as resp:
-            content = _clean_markdown_fences(json.loads(resp.read().decode("utf-8")).get("response", "").strip())
-            if not content:
-                return {"ok": False, "output": "Ollama returned empty response."}
-            return {"ok": True, "output": content}
+        content = _clean_markdown_fences(_llm_chat(prompt, model, max_tokens=1024))
+        if not content:
+            return {"ok": False, "output": "LLM returned empty response."}
+        return {"ok": True, "output": content}
     except Exception as e:
-        return {"ok": False, "output": f"Ollama error: {e}"}
+        return {"ok": False, "output": f"LLM error: {e}"}
 
 
 def suggest_commit_message(
@@ -479,18 +502,13 @@ def suggest_commit_message(
         f"{context_block}\n\n"
         "Commit message:"
     )
-    payload = json.dumps({"model": model, "prompt": prompt, "stream": False,
-                          "options": {"num_predict": 80}}).encode("utf-8")
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=payload,
-                                     headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=None) as resp:
-            message = _clean_commit(json.loads(resp.read().decode("utf-8")).get("response", "").strip())
-            if not message:
-                return {"ok": False, "output": "Ollama returned empty response."}
-            return {"ok": True, "output": message}
+        message = _clean_commit(_llm_chat(prompt, model, max_tokens=80))
+        if not message:
+            return {"ok": False, "output": "LLM returned empty response."}
+        return {"ok": True, "output": message}
     except Exception as e:
-        return {"ok": False, "output": f"Ollama error: {e}"}
+        return {"ok": False, "output": f"LLM error: {e}"}
 
 
 def git_push(path: str, remote: str = "origin", branch: str = "") -> dict:
