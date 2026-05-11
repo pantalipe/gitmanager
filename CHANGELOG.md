@@ -8,6 +8,21 @@ All notable changes to gitmanager are documented here.
 
 ---
 
+## [2.3] — 2026-05-10
+
+### Changed
+- LLM fallback paths in `server.py` (used when pandagent is unavailable) migrated from
+  Ollama's native API to the OpenAI-compatible `/v1/chat/completions` endpoint
+- `LLM_BASE_URL = "http://127.0.0.1:8080"` constant added
+- `get_ollama_models()` fallback: `/api/tags` → `/v1/models`, parses `data[].id`
+  instead of `models[].name`
+- `generate_readme()` and `suggest_commit_message()` fallbacks: `/api/generate` →
+  `/v1/chat/completions` via new `_llm_chat()` helper; response parsed from
+  `choices[0].message.content`
+- All "Ollama" strings in fallback error messages updated to "LLM server"
+
+---
+
 ## [2.2] — 2026-05-04
 
 ### Changed
