@@ -5,7 +5,11 @@
       "description": "OpenAI-compatible endpoint for llama-swap (change here + config sync when the port moves)",
       "projects": [
         "pandagent",
-        "panda-home-bot"
+        "panda-home-bot",
+        "job-hunter",
+        "gitmanager",
+        "rotman",
+        "ollama-bench"
       ]
     },
     "PANDA_LLM_PORT": {

@@ -26,7 +26,7 @@ try:
 except ImportError:
     _PANDA_AVAILABLE = False
 
-LLM_BASE_URL  = "http://127.0.0.1:8080"   # llama-swap / llama-server (OpenAI-compatible)
+LLM_BASE_URL  = os.environ.get("LLM_BASE_URL", "http://127.0.0.1:8081")   # fallback only — used when pandagent is unavailable
 
 PROJECTS_FILE = Path(__file__).parent / "projects.json"
 TODOS_DIR     = Path(__file__).parent / "todos"
