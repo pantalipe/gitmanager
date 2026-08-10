@@ -18,6 +18,20 @@
       "projects": [
         "panda-cli"
       ]
+    },
+    "TELEGRAM_COMMUNITY_URL_PT": {
+      "value": "https://t.me/+ZS3guglqYLJiOGEx",
+      "description": "Public pt-BR Telegram group (mirrors bitcoinfacil), linked from the join_community CTA via /hub",
+      "projects": [
+        "conduler"
+      ]
+    },
+    "TELEGRAM_COMMUNITY_URL_EN": {
+      "value": "https://t.me/+deIOtxE00LdhNWZh",
+      "description": "Public English Telegram group (mirrors PandaPoints), linked from the join_community CTA via /hub",
+      "projects": [
+        "conduler"
+      ]
     }
   }
 }
