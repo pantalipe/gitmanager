@@ -16,3 +16,6 @@ __pycache__/
 # OS
 Thumbs.db
 .DS_Store
+
+# Local backups (e.g. projects.json.bak contains local paths)
+*.bak
